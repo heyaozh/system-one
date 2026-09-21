@@ -200,8 +200,8 @@ crate 不读任何配置文件，所以 key 不会落进仓库——`.env` 同�
 macOS 上放进 Keychain，只在需要的 shell 里导出：
 
 ```bash
-# 存一次——会提示输入，不会进 shell history
-security add-generic-password -a "$USER" -s JEV_API_KEY -w
+# 存（或替换）——-U 表示已存在就更新；会提示输入，不会进 shell history
+security add-generic-password -U -a "$USER" -s JEV_API_KEY -w
 
 # 每个 shell / 脚本里按需导出
 export JEV_API_KEY="$(security find-generic-password -a "$USER" -s JEV_API_KEY -w)"

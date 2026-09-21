@@ -207,8 +207,9 @@ Nothing is read from a config file, so the key never sits in the repo — `.env`
 On macOS, keep it in the Keychain and export it only in the shell that needs it:
 
 ```bash
-# store once — prompts for the value, so it stays out of shell history
-security add-generic-password -a "$USER" -s JEV_API_KEY -w
+# store (or replace) — -U updates an existing item; prompts for the value,
+# so it stays out of shell history
+security add-generic-password -U -a "$USER" -s JEV_API_KEY -w
 
 # export per shell / per script
 export JEV_API_KEY="$(security find-generic-password -a "$USER" -s JEV_API_KEY -w)"
