@@ -121,7 +121,10 @@ impl DecisionBackend for JevHttp {
                         continue;
                     }
                     if retryable {
-                        return Err(Error::RateLimited { backend: self.id(), attempts: attempt });
+                        return Err(Error::RateLimited {
+                            backend: self.id(),
+                            attempts: attempt,
+                        });
                     }
                     let text = r.text().await.unwrap_or_default();
                     return Err(Error::Backend {
@@ -133,7 +136,10 @@ impl DecisionBackend for JevHttp {
                     tokio::time::sleep(self.base_backoff * 2u32.pow(attempt - 1)).await;
                 }
                 Err(e) => {
-                    return Err(Error::Backend { backend: self.id(), message: e.to_string() });
+                    return Err(Error::Backend {
+                        backend: self.id(),
+                        message: e.to_string(),
+                    });
                 }
             }
         }

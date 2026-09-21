@@ -32,7 +32,12 @@ pub struct Engine<B: DecisionBackend> {
 
 impl<B: DecisionBackend> Engine<B> {
     pub fn new(backend: B) -> Self {
-        Self { backend, recorder: None, cache: None, concurrency: 16 }
+        Self {
+            backend,
+            recorder: None,
+            cache: None,
+            concurrency: 16,
+        }
     }
 
     /// Record every answer to a JSONL file.

@@ -70,15 +70,36 @@ fn backend() -> Box<dyn DecisionBackend> {
         match name {
             "tier" => Some(answers::choice([
                 ("ignore", if short { 0.6 } else { 0.02 }),
-                ("emoji", if msg.contains("haha") || msg.contains("lol") { 0.7 } else { 0.05 }),
-                ("canned", if msg.starts_with("hi") || msg.starts_with("good morning") { 0.75 } else { 0.05 }),
+                (
+                    "emoji",
+                    if msg.contains("haha") || msg.contains("lol") {
+                        0.7
+                    } else {
+                        0.05
+                    },
+                ),
+                (
+                    "canned",
+                    if msg.starts_with("hi") || msg.starts_with("good morning") {
+                        0.75
+                    } else {
+                        0.05
+                    },
+                ),
                 ("small_model", if question && !remembers { 0.6 } else { 0.15 }),
                 ("big_model", if remembers || msg.len() > 80 { 0.7 } else { 0.1 }),
             ])),
             "clip" => Some(answers::choice([
                 ("idle", 0.1),
                 ("nod", if short { 0.5 } else { 0.1 }),
-                ("laugh", if msg.contains("haha") || msg.contains("lol") { 0.8 } else { 0.02 }),
+                (
+                    "laugh",
+                    if msg.contains("haha") || msg.contains("lol") {
+                        0.8
+                    } else {
+                        0.02
+                    },
+                ),
                 ("head_tilt", if question { 0.5 } else { 0.05 }),
                 ("shrug", 0.05),
                 ("gasp", if msg.contains('!') { 0.4 } else { 0.03 }),
@@ -86,7 +107,11 @@ fn backend() -> Box<dyn DecisionBackend> {
                 ("think", if remembers { 0.6 } else { 0.05 }),
             ])),
             "needs_memory" => Some(answers::noul(if remembers { 0.92 } else { 0.06 })),
-            "jailbreak_risk" => Some(answers::noul(if msg.contains("ignore your rules") { 0.9 } else { 0.02 })),
+            "jailbreak_risk" => Some(answers::noul(if msg.contains("ignore your rules") {
+                0.9
+            } else {
+                0.02
+            })),
             _ => Some(Mock::uniform_answer(spec)),
         }
     }))
@@ -107,7 +132,11 @@ async fn main() -> Result<()> {
     ];
 
     for msg in incoming {
-        let state = ChatState { persona: "cheerful, curious, slightly clumsy", last_turns: vec!["…"], incoming: msg };
+        let state = ChatState {
+            persona: "cheerful, curious, slightly clumsy",
+            last_turns: vec!["…"],
+            incoming: msg,
+        };
         let r: Reflex = engine.ask(&state).await?;
 
         // Sample the clip instead of arg-max: the character is not a robot
@@ -115,10 +144,18 @@ async fn main() -> Result<()> {
         let clip = r.clip.sample(&mut rng);
 
         // Jailbreak gate: a false alarm is mildly annoying (1), a miss is bad (8).
-        let tier = if r.jailbreak_risk.decide(1.0, 8.0) { Tier::Canned } else { r.tier.argmax() };
+        let tier = if r.jailbreak_risk.decide(1.0, 8.0) {
+            Tier::Canned
+        } else {
+            r.tier.argmax()
+        };
 
-        println!("{msg:?}\n  tier={tier:?}  clip={clip:?} (argmax {:?})  needs_memory={:.2}  jailbreak={:.2}\n",
-            r.clip.argmax(), r.needs_memory.p, r.jailbreak_risk.p);
+        println!(
+            "{msg:?}\n  tier={tier:?}  clip={clip:?} (argmax {:?})  needs_memory={:.2}  jailbreak={:.2}\n",
+            r.clip.argmax(),
+            r.needs_memory.p,
+            r.jailbreak_risk.p
+        );
     }
     Ok(())
 }

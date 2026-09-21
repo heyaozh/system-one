@@ -56,12 +56,43 @@ fn backend() -> Box<dyn DecisionBackend> {
     Box::new(Mock::with_rule(|state, name, spec| {
         let text = state["text"].as_str().unwrap_or("").to_lowercase();
         match name {
-            "is_surprise" => Some(answers::noul(if text.contains("unexpected") || text.contains("shock") { 0.85 } else { 0.15 })),
-            "is_m_and_a" => Some(answers::noul(if text.contains("acquire") || text.contains("merger") { 0.9 } else { 0.05 })),
+            "is_surprise" => Some(answers::noul(
+                if text.contains("unexpected") || text.contains("shock") {
+                    0.85
+                } else {
+                    0.15
+                },
+            )),
+            "is_m_and_a" => Some(answers::noul(if text.contains("acquire") || text.contains("merger") {
+                0.9
+            } else {
+                0.05
+            })),
             "topic" => Some(answers::choice([
-                ("earnings", if text.contains("earnings") || text.contains("guidance") { 0.8 } else { 0.05 }),
-                ("regulation", if text.contains("regulator") || text.contains("fine") { 0.8 } else { 0.05 }),
-                ("macro", if text.contains("rate") || text.contains("inflation") { 0.8 } else { 0.05 }),
+                (
+                    "earnings",
+                    if text.contains("earnings") || text.contains("guidance") {
+                        0.8
+                    } else {
+                        0.05
+                    },
+                ),
+                (
+                    "regulation",
+                    if text.contains("regulator") || text.contains("fine") {
+                        0.8
+                    } else {
+                        0.05
+                    },
+                ),
+                (
+                    "macro",
+                    if text.contains("rate") || text.contains("inflation") {
+                        0.8
+                    } else {
+                        0.05
+                    },
+                ),
                 ("other", 0.1),
             ])),
             _ => Some(Mock::uniform_answer(spec)),
@@ -73,7 +104,10 @@ fn backend() -> Box<dyn DecisionBackend> {
 async fn main() -> Result<()> {
     let path = "runs/news_features.jsonl";
     let _ = std::fs::remove_file(path);
-    let engine = Engine::new(backend()).with_recorder(Recorder::open(path)?).with_concurrency(8).with_cache();
+    let engine = Engine::new(backend())
+        .with_recorder(Recorder::open(path)?)
+        .with_concurrency(8)
+        .with_cache();
 
     // 1. Synthetic headline stream.
     let mut rng = rand::rngs::StdRng::seed_from_u64(42);

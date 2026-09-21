@@ -252,10 +252,11 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 decisions, cache, recorder, replay, shadow and the calibration maths — 11 integration
 tests, all offline against `Mock`, plus every feature combination compiling on its own.
 
-**What is not:** the test suite never calls the live API, so `JevHttp` is only as
-correct as the public TypeSafe docs it was written against (September 2026). Point
-`jev-ask` at your own key before you trust it with anything that matters — one command,
-and it tells you whether the wire format still holds.
+**What is not:** the automated suite never calls the live API — it runs entirely on
+`Mock`, so it stays fast, free and deterministic. `JevHttp` has been exercised against
+the real endpoint by hand (September 2026) and the wire format held, but that is one
+person on one day, not a regression test. Point `jev-ask` at your own key before you
+trust it with anything that matters; it is one command and it tells you immediately.
 
 Not affiliated with TypeSafe AI. `jev` here names the model it talks to, nothing more.
 

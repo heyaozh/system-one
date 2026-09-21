@@ -211,7 +211,11 @@ impl<E: JevChoice> Choice<E> {
     #[doc(hidden)]
     pub fn from_raw(name: &str, raw: &RawAnswer) -> Result<Self> {
         match raw {
-            RawAnswer::Choice { choice, probabilities, confidence } => {
+            RawAnswer::Choice {
+                choice,
+                probabilities,
+                confidence,
+            } => {
                 let chosen = E::from_key(choice).ok_or_else(|| Error::SchemaMismatch {
                     question: name.into(),
                     reason: format!("unknown option `{choice}`"),
@@ -221,7 +225,11 @@ impl<E: JevChoice> Choice<E> {
                     let p = probabilities.get(v.key()).copied().unwrap_or(0.0);
                     probs.push((v, p));
                 }
-                Ok(Self { chosen, probabilities: probs, confidence: *confidence })
+                Ok(Self {
+                    chosen,
+                    probabilities: probs,
+                    confidence: *confidence,
+                })
             }
             other => Err(Error::SchemaMismatch {
                 question: name.into(),
@@ -282,7 +290,12 @@ impl Score {
     #[doc(hidden)]
     pub fn from_raw(name: &str, raw: &RawAnswer, levels: &[String]) -> Result<Self> {
         match raw {
-            RawAnswer::Score { score, legend, probabilities, confidence } => {
+            RawAnswer::Score {
+                score,
+                legend,
+                probabilities,
+                confidence,
+            } => {
                 let n = levels.len();
                 let mut probs = vec![0.0; n];
                 for (k, p) in probabilities {
@@ -305,7 +318,12 @@ impl Score {
                         .map(|i| legend.get(&i.to_string()).cloned().unwrap_or_else(|| levels[i].clone()))
                         .collect()
                 };
-                Ok(Self { value: *score, probabilities: probs, legend: legend_vec, confidence: *confidence })
+                Ok(Self {
+                    value: *score,
+                    probabilities: probs,
+                    legend: legend_vec,
+                    confidence: *confidence,
+                })
             }
             other => Err(Error::SchemaMismatch {
                 question: name.into(),
@@ -334,8 +352,5 @@ pub fn binary_entropy(p: f64) -> f64 {
 
 /// Shannon entropy in bits of an (approximately normalised) distribution.
 pub fn entropy_bits<I: Iterator<Item = f64>>(probs: I) -> f64 {
-    -probs
-        .filter(|p| *p > 0.0)
-        .map(|p| p * p.log2())
-        .sum::<f64>()
+    -probs.filter(|p| *p > 0.0).map(|p| p * p.log2()).sum::<f64>()
 }

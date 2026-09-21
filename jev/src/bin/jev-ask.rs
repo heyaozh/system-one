@@ -65,7 +65,10 @@ fn main() -> Result<()> {
 
     let spec = match spec_from_flag {
         Some(build) => build(question),
-        None => QuestionSpec::Noul { instructions: question, criteria: None },
+        None => QuestionSpec::Noul {
+            instructions: question,
+            criteria: None,
+        },
     };
     spec.validate(NAME)?;
     let schema = QuestionSchema::new().with(NAME, spec);
@@ -89,7 +92,11 @@ fn main() -> Result<()> {
             println!("P(yes):   {:.3}", n.p);
             println!("decide:   yes={} at a 1:1 cost ratio", n.decide(1.0, 1.0));
         }
-        jev::answer::RawAnswer::Choice { choice, probabilities, confidence } => {
+        jev::answer::RawAnswer::Choice {
+            choice,
+            probabilities,
+            confidence,
+        } => {
             let mut ps: Vec<_> = probabilities.iter().collect();
             ps.sort_by(|a, b| b.1.total_cmp(a.1));
             println!("argmax:   {choice}  (confidence {confidence:.3})");
@@ -97,7 +104,12 @@ fn main() -> Result<()> {
                 println!("  {p:>6.3}  {k}");
             }
         }
-        jev::answer::RawAnswer::Score { score, legend, probabilities, confidence } => {
+        jev::answer::RawAnswer::Score {
+            score,
+            legend,
+            probabilities,
+            confidence,
+        } => {
             println!("score:    {score:.3}  (confidence {confidence:.3})");
             let mut ps: Vec<_> = probabilities.iter().collect();
             ps.sort_by_key(|(k, _)| k.parse::<usize>().unwrap_or(0));

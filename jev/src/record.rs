@@ -79,7 +79,11 @@ impl Recorder {
             }
         }
         let file = std::fs::OpenOptions::new().create(true).append(true).open(&path)?;
-        Ok(Self { path, file: Mutex::new(file), tag: None })
+        Ok(Self {
+            path,
+            file: Mutex::new(file),
+            tag: None,
+        })
     }
 
     /// Tag every record written by this recorder.
@@ -195,14 +199,23 @@ pub fn export_parquet(jsonl: impl AsRef<Path>, out: impl AsRef<Path>) -> Result<
             opt_col(&|r| r.tag.clone()),
         ],
     )
-    .map_err(|e| crate::error::Error::Backend { backend: "parquet".into(), message: e.to_string() })?;
+    .map_err(|e| crate::error::Error::Backend {
+        backend: "parquet".into(),
+        message: e.to_string(),
+    })?;
 
     let file = std::fs::File::create(out)?;
-    let mut w = ArrowWriter::try_new(file, schema, None)
-        .map_err(|e| crate::error::Error::Backend { backend: "parquet".into(), message: e.to_string() })?;
-    w.write(&batch)
-        .map_err(|e| crate::error::Error::Backend { backend: "parquet".into(), message: e.to_string() })?;
-    w.close()
-        .map_err(|e| crate::error::Error::Backend { backend: "parquet".into(), message: e.to_string() })?;
+    let mut w = ArrowWriter::try_new(file, schema, None).map_err(|e| crate::error::Error::Backend {
+        backend: "parquet".into(),
+        message: e.to_string(),
+    })?;
+    w.write(&batch).map_err(|e| crate::error::Error::Backend {
+        backend: "parquet".into(),
+        message: e.to_string(),
+    })?;
+    w.close().map_err(|e| crate::error::Error::Backend {
+        backend: "parquet".into(),
+        message: e.to_string(),
+    })?;
     Ok(records.len())
 }

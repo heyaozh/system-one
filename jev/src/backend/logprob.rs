@@ -27,8 +27,8 @@ use crate::error::{Error, Result};
 use crate::schema::{QuestionSchema, QuestionSpec};
 
 const LABELS: &[&str] = &[
-    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T",
-    "U", "V", "W", "X", "Y", "Z",
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W",
+    "X", "Y", "Z",
 ];
 
 /// Which OpenAI-compatible endpoint to use.
@@ -108,7 +108,11 @@ impl LocalLogprob {
             QuestionSpec::Choice { instructions, criteria } => (instructions.clone(), criteria.clone()),
             QuestionSpec::Score { instructions, criteria } => (
                 format!("{instructions} (ordered scale, lowest first)"),
-                criteria.iter().enumerate().map(|(i, l)| (i.to_string(), Some(l.clone()))).collect(),
+                criteria
+                    .iter()
+                    .enumerate()
+                    .map(|(i, l)| (i.to_string(), Some(l.clone())))
+                    .collect(),
             ),
         };
         if options.len() > LABELS.len() {
@@ -163,14 +167,22 @@ impl LocalLogprob {
         if let Some(k) = &self.api_key {
             req = req.bearer_auth(k);
         }
-        let resp = req.send().await.map_err(|e| Error::Backend { backend: self.id(), message: e.to_string() })?;
+        let resp = req.send().await.map_err(|e| Error::Backend {
+            backend: self.id(),
+            message: e.to_string(),
+        })?;
         if !resp.status().is_success() {
             let status = resp.status();
             let text = resp.text().await.unwrap_or_default();
-            return Err(Error::Backend { backend: self.id(), message: format!("HTTP {status}: {text}") });
+            return Err(Error::Backend {
+                backend: self.id(),
+                message: format!("HTTP {status}: {text}"),
+            });
         }
-        let v: serde_json::Value =
-            resp.json().await.map_err(|e| Error::Backend { backend: self.id(), message: e.to_string() })?;
+        let v: serde_json::Value = resp.json().await.map_err(|e| Error::Backend {
+            backend: self.id(),
+            message: e.to_string(),
+        })?;
 
         let mut out = BTreeMap::new();
         match self.style {
@@ -189,7 +201,10 @@ impl LocalLogprob {
             }
             PromptStyle::Completion => {
                 // choices[0].logprobs.top_logprobs[0]: {token: logprob}
-                if let Some(map) = v.pointer("/choices/0/logprobs/top_logprobs/0").and_then(|x| x.as_object()) {
+                if let Some(map) = v
+                    .pointer("/choices/0/logprobs/top_logprobs/0")
+                    .and_then(|x| x.as_object())
+                {
                     for (tok, lp) in map {
                         if let Some(lp) = lp.as_f64() {
                             out.insert(normalise_token(tok), lp);
@@ -233,7 +248,10 @@ impl LocalLogprob {
             .unwrap_or((0, 0.0));
 
         Ok(match spec {
-            QuestionSpec::Noul { .. } => RawAnswer::Noul { noul: probs[0], confidence: Some(conf) },
+            QuestionSpec::Noul { .. } => RawAnswer::Noul {
+                noul: probs[0],
+                confidence: Some(conf),
+            },
             QuestionSpec::Choice { .. } => RawAnswer::Choice {
                 choice: keys[argmax].clone(),
                 probabilities: keys.iter().cloned().zip(probs.iter().copied()).collect(),
@@ -241,7 +259,11 @@ impl LocalLogprob {
             },
             QuestionSpec::Score { criteria, .. } => RawAnswer::Score {
                 score: probs.iter().enumerate().map(|(i, p)| i as f64 * p).sum(),
-                legend: criteria.iter().enumerate().map(|(i, l)| (i.to_string(), l.clone())).collect(),
+                legend: criteria
+                    .iter()
+                    .enumerate()
+                    .map(|(i, l)| (i.to_string(), l.clone()))
+                    .collect(),
                 probabilities: probs.iter().enumerate().map(|(i, p)| (i.to_string(), *p)).collect(),
                 confidence: conf,
             },
@@ -250,7 +272,9 @@ impl LocalLogprob {
 }
 
 fn normalise_token(tok: &str) -> String {
-    tok.trim().trim_matches(|c: char| c == ')' || c == '.' || c == ':').to_uppercase()
+    tok.trim()
+        .trim_matches(|c: char| c == ')' || c == '.' || c == ':')
+        .to_uppercase()
 }
 
 #[async_trait]

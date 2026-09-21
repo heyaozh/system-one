@@ -34,6 +34,14 @@ jobs:
       - run: cargo check -p jev --no-default-features --features http
       - run: cargo check -p jev --features parquet
 
-  # No fmt / clippy job yet: neither component is installed on the maintainer's
-  # machine, so a `-D warnings` gate has never been run locally and would go red
-  # on the first push. Add it once the tree is verified clean.
+  lint:
+    name: fmt & clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+      - run: cargo clippy --workspace --all-targets -- -D warnings

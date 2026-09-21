@@ -58,8 +58,8 @@ async fn demo_with_mock() -> Result<()> {
 async fn run<B: jev::backend::DecisionBackend>(backend: B) -> Result<()> {
     let path = "runs/shadow.jsonl";
     let _ = std::fs::remove_file(path);
-    let backend = jev::backend::Shadow::new(backend, Mock::uniform().with_id("mock:noop"))
-        .with_recorder(Recorder::open(path)?);
+    let backend =
+        jev::backend::Shadow::new(backend, Mock::uniform().with_id("mock:noop")).with_recorder(Recorder::open(path)?);
     // ^ In real use you would pass the Shadow directly; wrapping again here
     //   only serves to keep this function generic over any backend.
     let engine = Engine::new(backend);
@@ -71,7 +71,12 @@ async fn run<B: jev::backend::DecisionBackend>(backend: B) -> Result<()> {
     ];
     for h in headlines {
         let v: HeadlineView = engine.ask(h).await?;
-        println!("{h}\n  direction={:?} ({:.2})  priced_in={:.2}", v.direction.argmax(), v.direction.confidence, v.priced_in.p);
+        println!(
+            "{h}\n  direction={:?} ({:.2})  priced_in={:.2}",
+            v.direction.argmax(),
+            v.direction.confidence,
+            v.priced_in.p
+        );
     }
 
     let records = read_records(path)?;

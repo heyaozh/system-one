@@ -55,7 +55,10 @@ fn expand_choice(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let mut descs = Vec::new();
     for v in &data.variants {
         if !matches!(v.fields, Fields::Unit) {
-            return Err(syn::Error::new_spanned(&v.ident, "JevChoice variants must be unit variants"));
+            return Err(syn::Error::new_spanned(
+                &v.ident,
+                "JevChoice variants must be unit variants",
+            ));
         }
         let args = JevArgs::from_attrs(&v.attrs)?;
         let key = args.key.unwrap_or_else(|| v.ident.to_string().to_snake_case());
@@ -119,7 +122,10 @@ enum FieldKind {
 fn expand_questions(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let name = &input.ident;
     let Data::Struct(data) = &input.data else {
-        return Err(syn::Error::new_spanned(name, "JevQuestions can only be derived for structs"));
+        return Err(syn::Error::new_spanned(
+            name,
+            "JevQuestions can only be derived for structs",
+        ));
     };
     let Fields::Named(fields) = &data.fields else {
         return Err(syn::Error::new_spanned(name, "JevQuestions needs named fields"));
@@ -219,7 +225,10 @@ fn expand_questions(input: &DeriveInput) -> syn::Result<TokenStream2> {
 
 fn field_kind(ty: &Type) -> syn::Result<FieldKind> {
     let Type::Path(tp) = ty else {
-        return Err(syn::Error::new_spanned(ty, "field type must be Noul, Choice<E> or Score"));
+        return Err(syn::Error::new_spanned(
+            ty,
+            "field type must be Noul, Choice<E> or Score",
+        ));
     };
     let seg = tp.path.segments.last().unwrap();
     match seg.ident.to_string().as_str() {
@@ -227,14 +236,23 @@ fn field_kind(ty: &Type) -> syn::Result<FieldKind> {
         "Score" => Ok(FieldKind::Score),
         "Choice" => {
             let PathArguments::AngleBracketed(ab) = &seg.arguments else {
-                return Err(syn::Error::new_spanned(ty, "Choice needs a type parameter: Choice<MyEnum>"));
+                return Err(syn::Error::new_spanned(
+                    ty,
+                    "Choice needs a type parameter: Choice<MyEnum>",
+                ));
             };
             match ab.args.first() {
                 Some(GenericArgument::Type(t)) => Ok(FieldKind::Choice(t.clone())),
-                _ => Err(syn::Error::new_spanned(ty, "Choice needs a type parameter: Choice<MyEnum>")),
+                _ => Err(syn::Error::new_spanned(
+                    ty,
+                    "Choice needs a type parameter: Choice<MyEnum>",
+                )),
             }
         }
-        other => Err(syn::Error::new_spanned(ty, format!("unsupported field type `{other}`; use Noul, Choice<E> or Score"))),
+        other => Err(syn::Error::new_spanned(
+            ty,
+            format!("unsupported field type `{other}`; use Noul, Choice<E> or Score"),
+        )),
     }
 }
 
@@ -313,7 +331,10 @@ fn expr_str(e: &Expr) -> syn::Result<String> {
 fn expr_str_array(e: &Expr) -> syn::Result<Vec<String>> {
     match e {
         Expr::Array(ExprArray { elems, .. }) => elems.iter().map(expr_str).collect(),
-        _ => Err(syn::Error::new_spanned(e, "expected an array of string literals: [\"a\", \"b\"]")),
+        _ => Err(syn::Error::new_spanned(
+            e,
+            "expected an array of string literals: [\"a\", \"b\"]",
+        )),
     }
 }
 

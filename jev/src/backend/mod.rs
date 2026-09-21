@@ -19,21 +19,21 @@ use crate::answer::RawAnswers;
 use crate::error::Result;
 use crate::schema::QuestionSchema;
 
-mod mock;
-mod replay;
-mod shadow;
 #[cfg(feature = "http")]
 mod http;
 #[cfg(feature = "http")]
 mod logprob;
+mod mock;
+mod replay;
+mod shadow;
 
-pub use mock::{answers, Mock};
-pub use replay::Replay;
-pub use shadow::Shadow;
 #[cfg(feature = "http")]
 pub use http::JevHttp;
 #[cfg(feature = "http")]
 pub use logprob::{LocalLogprob, PromptStyle};
+pub use mock::{answers, Mock};
+pub use replay::Replay;
+pub use shadow::Shadow;
 
 /// The one trait every backend implements.
 #[async_trait]

@@ -71,7 +71,13 @@ fn backend() -> Box<dyn DecisionBackend> {
             "within_mandate" => Some(answers::noul(if rationale.contains("meme") { 0.15 } else { 0.9 })),
             "wash_like" => Some(answers::noul(if fills > 20 { 0.7 } else { 0.05 })),
             "breach" => Some(answers::score(
-                if over <= 1.0 { &[0.9, 0.08, 0.02] } else if over <= 1.1 { &[0.1, 0.75, 0.15] } else { &[0.02, 0.18, 0.8] },
+                if over <= 1.0 {
+                    &[0.9, 0.08, 0.02]
+                } else if over <= 1.1 {
+                    &[0.1, 0.75, 0.15]
+                } else {
+                    &[0.02, 0.18, 0.8]
+                },
                 &["No breach", "Minor breach (<10% over)", "Serious breach (>10% over)"],
             )),
             "verdict" => Some(answers::choice([

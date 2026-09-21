@@ -30,7 +30,11 @@ impl Replay {
         for r in read_records(path)? {
             table.insert((r.state_hash, r.schema_hash), r.answers);
         }
-        Ok(Self { table, fallback: None, source: path.display().to_string() })
+        Ok(Self {
+            table,
+            fallback: None,
+            source: path.display().to_string(),
+        })
     }
 
     /// Answer unknown states with another backend (e.g. live Jev) instead of
@@ -62,7 +66,10 @@ impl DecisionBackend for Replay {
         }
         match &self.fallback {
             Some(b) => b.decide(state, schema).await,
-            None => Err(Error::NotRecorded { state_hash: key.0, schema_hash: key.1 }),
+            None => Err(Error::NotRecorded {
+                state_hash: key.0,
+                schema_hash: key.1,
+            }),
         }
     }
 }

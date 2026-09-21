@@ -67,7 +67,10 @@ fn schema_matches_api_wire_format() {
 
     // `name = "..."` overrides the wire name; doc comment is the instruction.
     assert!(json.get("is_spam").is_none());
-    assert_eq!(json["is_spam_wire"]["instructions"], "Doc comments work as instructions too.");
+    assert_eq!(
+        json["is_spam_wire"]["instructions"],
+        "Doc comments work as instructions too."
+    );
 }
 
 #[test]
@@ -104,8 +107,17 @@ fn api_response_example_decodes() {
 fn schema_mismatch_is_an_error_not_a_panic() {
     use jev::JevQuestions as _;
     let mut answers = BTreeMap::new();
-    answers.insert("dept".to_string(), RawAnswer::Noul { noul: 0.5, confidence: None }); // wrong type
-    let raw = RawAnswers { answers, ..Default::default() };
+    answers.insert(
+        "dept".to_string(),
+        RawAnswer::Noul {
+            noul: 0.5,
+            confidence: None,
+        },
+    ); // wrong type
+    let raw = RawAnswers {
+        answers,
+        ..Default::default()
+    };
     let err = Triage::from_raw(&raw).unwrap_err();
     assert!(matches!(err, Error::SchemaMismatch { .. }), "{err:?}");
 }
@@ -125,10 +137,26 @@ fn decision_helpers() {
         confidence: 0.5,
     };
     // Misrouting to Sales is catastrophic, otherwise unit cost: pick argmax.
-    let a = c.decide(|t, a| if t == a { 0.0 } else if a == Dept::Sales { 100.0 } else { 1.0 });
+    let a = c.decide(|t, a| {
+        if t == a {
+            0.0
+        } else if a == Dept::Sales {
+            100.0
+        } else {
+            1.0
+        }
+    });
     assert_eq!(a, Dept::Billing);
     // Now make wrongly routing away from Technical very expensive -> pick Technical.
-    let a = c.decide(|t, a| if t == a { 0.0 } else if t == Dept::Technical { 10.0 } else { 1.0 });
+    let a = c.decide(|t, a| {
+        if t == a {
+            0.0
+        } else if t == Dept::Technical {
+            10.0
+        } else {
+            1.0
+        }
+    });
     assert_eq!(a, Dept::Technical);
     assert_eq!(c.ranked()[0].0, Dept::Billing);
 
@@ -188,8 +216,10 @@ async fn record_replay_and_outcomes_roundtrip() {
     let path = dir.path().join("run.jsonl");
 
     // 1. Record with a mock.
-    let engine = Engine::new(Mock::with_rule(|_, name, _| (name == "refund").then(|| answers::noul(0.8))))
-        .with_recorder(Recorder::open(&path).unwrap());
+    let engine = Engine::new(Mock::with_rule(|_, name, _| {
+        (name == "refund").then(|| answers::noul(0.8))
+    }))
+    .with_recorder(Recorder::open(&path).unwrap());
     let t: Triage = engine.ask("x").await.unwrap();
     assert!((t.refund.p - 0.8).abs() < 1e-9);
 
@@ -247,10 +277,22 @@ fn calibration_math() {
 #[test]
 fn schema_limits_are_enforced() {
     let mut s = QuestionSchema::new();
-    s.insert("x", QuestionSpec::Score { instructions: "?".into(), criteria: vec!["only one".into()] });
+    s.insert(
+        "x",
+        QuestionSpec::Score {
+            instructions: "?".into(),
+            criteria: vec!["only one".into()],
+        },
+    );
     assert!(matches!(s.validate().unwrap_err(), Error::InvalidSchema(_)));
     let mut s = QuestionSchema::new();
-    s.insert("x", QuestionSpec::Choice { instructions: "?".into(), criteria: (0..256).map(|i| (i.to_string(), None)).collect() });
+    s.insert(
+        "x",
+        QuestionSpec::Choice {
+            instructions: "?".into(),
+            criteria: (0..256).map(|i| (i.to_string(), None)).collect(),
+        },
+    );
     assert!(matches!(s.validate().unwrap_err(), Error::InvalidSchema(_)));
     assert!(QuestionSchema::new().validate().is_err());
 }

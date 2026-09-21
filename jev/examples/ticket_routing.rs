@@ -42,14 +42,39 @@ fn backend() -> Box<dyn DecisionBackend> {
         let text = state.as_str().unwrap_or_default().to_lowercase();
         match name {
             "department" => Some(answers::choice([
-                ("billing", if text.contains("payout") || text.contains("refund") { 0.85 } else { 0.05 }),
-                ("technical", if text.contains("error") || text.contains("api") { 0.85 } else { 0.05 }),
-                ("sales", if text.contains("pricing") || text.contains("upgrade") { 0.85 } else { 0.05 }),
+                (
+                    "billing",
+                    if text.contains("payout") || text.contains("refund") {
+                        0.85
+                    } else {
+                        0.05
+                    },
+                ),
+                (
+                    "technical",
+                    if text.contains("error") || text.contains("api") {
+                        0.85
+                    } else {
+                        0.05
+                    },
+                ),
+                (
+                    "sales",
+                    if text.contains("pricing") || text.contains("upgrade") {
+                        0.85
+                    } else {
+                        0.05
+                    },
+                ),
                 ("spam", if text.contains("crypto giveaway") { 0.9 } else { 0.05 }),
             ])),
             "wants_refund" => Some(answers::noul(if text.contains("refund") { 0.93 } else { 0.08 })),
             "urgency" => Some(answers::score(
-                if text.contains("3 days") || text.contains("urgent") { &[0.05, 0.25, 0.70] } else { &[0.6, 0.3, 0.1] },
+                if text.contains("3 days") || text.contains("urgent") {
+                    &[0.05, 0.25, 0.70]
+                } else {
+                    &[0.6, 0.3, 0.1]
+                },
                 &["Can wait a week", "Within a day", "Right now"],
             )),
             _ => Some(Mock::uniform_answer(spec)),
@@ -83,7 +108,11 @@ async fn main() -> Result<()> {
         // a false refund flag only costs a human glance (cost 1).
         let flag_refund = t.wants_refund.decide(1.0, 4.0);
 
-        println!("{text}\n  -> route={route:?}  (argmax={:?}, entropy={:.2} bits)", t.department.argmax(), t.department.entropy());
+        println!(
+            "{text}\n  -> route={route:?}  (argmax={:?}, entropy={:.2} bits)",
+            t.department.argmax(),
+            t.department.entropy()
+        );
         println!("     refund_flag={flag_refund}  P(refund)={:.2}", t.wants_refund.p);
         println!(
             "     urgency={} ({:.2}/{})  P(at least 'Within a day')={:.2}\n",

@@ -28,7 +28,11 @@ pub struct Shadow<P, S> {
 
 impl<P: DecisionBackend, S: DecisionBackend> Shadow<P, S> {
     pub fn new(primary: P, shadow: S) -> Self {
-        Self { primary, shadow, recorder: None }
+        Self {
+            primary,
+            shadow,
+            recorder: None,
+        }
     }
 
     /// Record both answers (tagged `primary` / `shadow`) to this recorder.
