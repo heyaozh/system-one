@@ -6,7 +6,7 @@
 
 [English](README.md) · **中文**
 
-[![CI](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml)
+[![CI](https://github.com/heyaozh/system-one/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/system-one/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#许可证)
 
 **给 Rust 的类型化、可校准的决策。**
@@ -43,7 +43,7 @@ state（任何可序列化的东西）+ questions（有界的答案空间）→ 
 
 ```toml
 [dependencies]
-system-one = { git = "https://github.com/heyaozh/jev-rust-crate" }
+system-one = { git = "https://github.com/heyaozh/system-one" }
 tokio = { version = "1", features = ["full"] }
 ```
 

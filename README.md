@@ -6,7 +6,7 @@
 
 **English** · [中文](README.zh-CN.md)
 
-[![CI](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml)
+[![CI](https://github.com/heyaozh/system-one/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/system-one/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
 
 **Typed, calibrated decisions for Rust.**
@@ -43,7 +43,7 @@ Not on crates.io yet, so take it from git:
 
 ```toml
 [dependencies]
-system-one = { git = "https://github.com/heyaozh/jev-rust-crate" }
+system-one = { git = "https://github.com/heyaozh/system-one" }
 tokio = { version = "1", features = ["full"] }
 ```
 
