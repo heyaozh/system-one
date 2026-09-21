@@ -6,6 +6,9 @@
 
 **English** · [中文](README.zh-CN.md)
 
+[![CI](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+
 **Typed, calibrated decisions for Rust.**
 A backend-agnostic client for *System One* models — models that answer a fixed set of questions with calibrated probabilities instead of generating text. The first backend is [TypeSafe AI's Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev); the same interface serves a mock, a recording, or **your own fine-tuned model**.
 
@@ -36,11 +39,15 @@ The point is the **loop**, not the wrapper: *decide → record → attach outcom
 
 ## Quick start
 
+Not on crates.io yet, so take it from git:
+
 ```toml
 [dependencies]
-jev = { path = "jev" }        # or from crates.io once published
+jev = { git = "https://github.com/heyaozh/jev-rust-crate" }
 tokio = { version = "1", features = ["full"] }
 ```
+
+Inside a checkout of this repo, `jev = { path = "jev" }` works too.
 
 ```rust
 use jev::prelude::*;
@@ -206,6 +213,7 @@ Every example falls back to a rule-based `Mock` when `JEV_API_KEY` is unset, so 
 
 ## API key
 
+A key comes from [TypeSafe AI](https://typesafe.ai) — this crate is a third-party client and issues none of its own.
 `JevHttp::from_env()` reads `JEV_API_KEY`, and optionally `JEV_ENDPOINT` and `JEV_MODEL`.
 Nothing is read from a config file, so the key never sits in the repo — `.env` is in `.gitignore` for the same reason.
 
@@ -238,4 +246,20 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 
 ## Status
 
-`0.1.0` — API shapes follow the public TypeSafe docs as of September 2026. Not affiliated with TypeSafe AI. Licensed MIT OR Apache-2.0.
+`0.1.0`, not published to crates.io yet.
+
+**What is verified:** the type system, derive macros, schema wire format, cost-matrix
+decisions, cache, recorder, replay, shadow and the calibration maths — 11 integration
+tests, all offline against `Mock`, plus every feature combination compiling on its own.
+
+**What is not:** the test suite never calls the live API, so `JevHttp` is only as
+correct as the public TypeSafe docs it was written against (September 2026). Point
+`jev-ask` at your own key before you trust it with anything that matters — one command,
+and it tells you whether the wire format still holds.
+
+Not affiliated with TypeSafe AI. `jev` here names the model it talks to, nothing more.
+
+## License
+
+MIT **or** Apache-2.0, at your option — the Rust ecosystem default. See
+[LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE).

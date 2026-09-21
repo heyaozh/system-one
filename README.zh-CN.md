@@ -6,6 +6,9 @@
 
 [English](README.md) · **中文**
 
+[![CI](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml/badge.svg)](https://github.com/heyaozh/jev-rust-crate/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#许可证)
+
 **给 Rust 的类型化、可校准的决策。**
 一个 backend 无关的 *System One* 模型客户端——这类模型不生成文本，而是对一组固定的问题给出带校准概率的答案。第一个 backend 是 [TypeSafe AI 的 Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev)；同一套接口也接 mock、录像回放，或者**你自己微调的模型**。
 
@@ -36,11 +39,15 @@ state（任何可序列化的东西）+ questions（有界的答案空间）→ 
 
 ## 快速开始
 
+还没发到 crates.io，先从 git 拿：
+
 ```toml
 [dependencies]
-jev = { path = "jev" }        # 发布到 crates.io 后改为版本号
+jev = { git = "https://github.com/heyaozh/jev-rust-crate" }
 tokio = { version = "1", features = ["full"] }
 ```
+
+在本仓库的 checkout 里，`jev = { path = "jev" }` 也可以。
 
 ```rust
 use jev::prelude::*;
@@ -198,6 +205,7 @@ cargo test
 
 ## API key
 
+key 要去 [TypeSafe AI](https://typesafe.ai) 申请——本 crate 是第三方客户端，不发放任何 key。
 `JevHttp::from_env()` 读 `JEV_API_KEY`，另外可选 `JEV_ENDPOINT` 和 `JEV_MODEL`。
 crate 不读任何配置文件，所以 key 不会落进仓库——`.env` 同样已经在 `.gitignore` 里。
 
@@ -229,4 +237,19 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 
 ## 状态
 
-`0.1.0`——API 形状依据 2026 年 9 月的 TypeSafe 公开文档。与 TypeSafe AI 无关联。许可证 MIT OR Apache-2.0。
+`0.1.0`，还没发布到 crates.io。
+
+**已验证的部分**：类型系统、派生宏、schema 线格式、成本矩阵决策、缓存、recorder、
+replay、shadow 和校准数学——11 个集成测试，全部离线跑在 `Mock` 上；此外每种 feature
+组合都能单独编译通过。
+
+**未验证的部分**：测试从不调用真实 API，所以 `JevHttp` 的正确性完全取决于它所依据的
+TypeSafe 公开文档（2026 年 9 月）。在把它用在要紧的地方之前，先拿你自己的 key 跑一次
+`jev-ask`——一条命令就能告诉你线格式是否还成立。
+
+与 TypeSafe AI 无关联。这里的 `jev` 只是它所对话的模型的名字，别无他意。
+
+## 许可证
+
+MIT **或** Apache-2.0，由使用者选择——Rust 生态的默认做法。见
+[LICENSE-MIT](LICENSE-MIT) 和 [LICENSE-APACHE](LICENSE-APACHE)。
