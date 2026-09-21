@@ -91,20 +91,24 @@ async fn main() -> jev::Result<()> {
 
 ### 先用一个问题试试
 
-写结构体之前，先在命令行上试一个问题——`examples/ask` 在运行时拼 schema：
+写结构体之前，先在命令行上试一个问题。`jev-ask` 是 crate 自带的一个小可执行
+文件，schema 在运行时拼，不用写任何 Rust：
 
 ```bash
-export JEV_API_KEY=...   # 没设就用 uniform Mock 回答，并会打印一行提示
+cargo install --path jev        # 一次就行——把 `jev-ask` 放进 PATH
+export JEV_API_KEY=...          # 没设就用 uniform Mock 回答，并会打印一行提示
 
-cargo run --example ask -- "这位客户是在要求退款吗？" \
+jev-ask "这位客户是在要求退款吗？" \
   "我的打款三天没到，手续费也想退"
 
-cargo run --example ask -- --choice billing,technical,sales,spam \
+jev-ask --choice billing,technical,sales,spam \
   "应该由哪个部门处理？" "调 /v1/orders 一直 500"
 
-cargo run --example ask -- --levels "可以等一周,一天之内,马上" \
+jev-ask --levels "可以等一周,一天之内,马上" \
   "这有多紧急？" "我的打款已经三天没到了"
 ```
+
+不想装的话，在仓库里直接跑：`cargo run --bin jev-ask -- <参数>`。
 
 打印的是完整分布，不只是 argmax——这正是重点。
 
@@ -173,9 +177,10 @@ println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).rend
 
 ## 示例
 
+一次性的问题用上面的 `jev-ask`；下面这些示例是完整的闭环：
+
 | 示例 | 展示 |
 |---|---|
-| `ask` | 命令行上问一个问题——不写结构体，schema 运行时拼。 |
 | `ticket_routing` | 最典型的「聪明 if」；成本矩阵路由。 |
 | `trade_risk_gate` | 结构化状态（拟下单 + 授权说明）→ 交易前合规闸门 + 硬性覆盖。通用交易场景，不涉及具体交易所。 |
 | `chat_reflex` | 对话角色的反射层：回应层级、动画片段（采样而非 argmax）、是否需要记忆、越狱风险。 |
@@ -183,7 +188,6 @@ println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).rend
 | `shadow_local_model` | 官方 API 做主、本地模型做影子，两者都记录。 |
 
 ```bash
-cargo run --example ask -- "这是在要求退款吗？" "我的打款三天没到，手续费也想退"
 cargo run --example ticket_routing                 # Mock backend，离线可跑
 JEV_API_KEY=... cargo run --example ticket_routing  # 真实 API
 cargo run --example batch_and_calibrate --features parquet

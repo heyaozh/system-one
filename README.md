@@ -91,20 +91,25 @@ Three questions, one call, ~100 ms, and the routing rule is an explicit cost mat
 
 ### Try one question first
 
-Before writing any struct, try a question from the shell — `examples/ask` builds the schema at runtime:
+Before writing any struct, try a question from the shell. `jev-ask` is a small
+binary shipped with the crate; it builds the schema at runtime, so there is no
+Rust to write:
 
 ```bash
-export JEV_API_KEY=...   # without it you get a uniform Mock answer, and a note saying so
+cargo install --path jev        # once — puts `jev-ask` on your PATH
+export JEV_API_KEY=...          # without it you get a uniform Mock answer, and a note saying so
 
-cargo run --example ask -- "Is this customer asking for a refund?" \
+jev-ask "Is this customer asking for a refund?" \
   "my payouts failed for 3 days, I want the fees back"
 
-cargo run --example ask -- --choice billing,technical,sales,spam \
+jev-ask --choice billing,technical,sales,spam \
   "Which department should handle this?" "getting a 500 from /v1/orders"
 
-cargo run --example ask -- --levels "Can wait a week,Within a day,Right now" \
+jev-ask --levels "Can wait a week,Within a day,Right now" \
   "How urgent is this?" "my payouts have failed for 3 days"
 ```
+
+Without installing, from inside this repo: `cargo run --bin jev-ask -- <args>`.
 
 It prints the full distribution, not just the arg-max — which is the whole point.
 
@@ -180,9 +185,10 @@ Those rows, with outcomes attached, are also a labelled training set. `--feature
 
 ## Examples
 
+The `jev-ask` binary above covers one-off questions. The examples are the full loops:
+
 | Example | Shows |
 |---|---|
-| `ask` | One question, from the command line — no structs, schema built at runtime. |
 | `ticket_routing` | The canonical smart if-statement; cost-matrix routing. |
 | `trade_risk_gate` | Structured state (a proposed order + mandate) → pre-trade compliance gate with hard overrides. Generic trading, no exchange specifics. |
 | `chat_reflex` | Reflex layer for a conversational character: response tier, animation clip (sampled, not arg-max), memory need, jailbreak risk. |
@@ -190,7 +196,6 @@ Those rows, with outcomes attached, are also a labelled training set. `--feature
 | `shadow_local_model` | Official API as primary, your local model as shadow, both recorded. |
 
 ```bash
-cargo run --example ask -- "Is this a refund request?" "my payouts failed, I want the fees back"
 cargo run --example ticket_routing               # Mock backend, runs offline
 JEV_API_KEY=... cargo run --example ticket_routing  # real API
 cargo run --example batch_and_calibrate --features parquet

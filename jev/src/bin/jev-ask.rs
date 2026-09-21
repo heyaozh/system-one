@@ -1,22 +1,26 @@
-//! Example 0 — ask *one* question from the command line.
+//! `jev-ask` — ask *one* question from the command line.
 //!
 //! The smallest possible loop: a question, a piece of state, a calibrated
 //! answer. No structs, no derive — the schema is built at runtime, so this
 //! doubles as a scratchpad for trying a question out before you commit it to
 //! a `#[derive(JevQuestions)]` type.
 //!
+//! Install it once (`cargo install --path jev`), then:
+//!
 //! ```text
 //! # yes/no (a `noul`)
-//! cargo run --example ask -- "Is this customer asking for a refund?" "my payouts failed, I want the fees back"
+//! jev-ask "Is this customer asking for a refund?" "my payouts failed, I want the fees back"
 //!
 //! # pick one (a `choice`)
-//! cargo run --example ask -- --choice billing,technical,sales,spam \
+//! jev-ask --choice billing,technical,sales,spam \
 //!     "Which department should handle this?" "getting a 500 from /v1/orders"
 //!
 //! # ordered scale (a `score`)
-//! cargo run --example ask -- --levels "Can wait a week,Within a day,Right now" \
+//! jev-ask --levels "Can wait a week,Within a day,Right now" \
 //!     "How urgent is this?" "my payouts have failed for 3 days"
 //! ```
+//!
+//! From inside this repo without installing: `cargo run --bin jev-ask -- <args>`.
 //!
 //! With `JEV_API_KEY` set the question goes to the real API; without it you
 //! get a uniform mock answer so the plumbing still runs (and says so).
@@ -54,7 +58,7 @@ fn main() -> Result<()> {
     let (question, state) = match (args.first(), args.get(1)) {
         (Some(q), Some(s)) => (q.clone(), s.clone()),
         _ => {
-            eprintln!("usage: cargo run --example ask -- [--choice a,b,c | --levels \"low,high\"] <question> <state>");
+            eprintln!("usage: jev-ask [--choice a,b,c | --levels \"low,high\"] <question> <state>");
             std::process::exit(2);
         }
     };
