@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="jev" width="120"/>
+  <img src="docs/logo.svg" alt="system-one" width="120"/>
 </p>
 
-# jev
+# system-one
 
 **English** · [中文](README.zh-CN.md)
 
@@ -22,12 +22,12 @@ Every "smart if-statement" has the same shape:
 state (anything serialisable) + questions (bounded answer spaces) → answers with probabilities
 ```
 
-Ticket routing, a pre-trade risk gate, an NPC's reflex layer, labelling a million headlines — same shape. `jev` fixes that shape once and stacks the tools you need on top:
+Ticket routing, a pre-trade risk gate, an NPC's reflex layer, labelling a million headlines — same shape. `system-one` fixes that shape once and stacks the tools you need on top:
 
 | Layer | What you get |
 |---|---|
 | **Types** | `Noul` (P(yes)), `Choice<E>` (distribution over an enum), `Score` (distribution over an ordered scale). Full distributions, not just arg-max. |
-| **Derive** | `#[derive(JevChoice)]` on an enum, `#[derive(JevQuestions)]` on a struct → schema generated, answers parsed back. Compile-time checks (≤255 options, 2–10 levels, field types). |
+| **Derive** | `#[derive(AsChoice)]` on an enum, `#[derive(AsQuestions)]` on a struct → schema generated, answers parsed back. Compile-time checks (≤255 options, 2–10 levels, field types). |
 | **Decision helpers** | `decide(cost)` minimises expected loss with a cost matrix; `entropy()` for active learning; `sample()` for stochastic agents. |
 | **Backends** | `JevHttp` (official API), `Mock`, `Replay`, `LocalLogprob` (your model via vLLM / llama.cpp), `Shadow` (A/B two backends). Or implement `DecisionBackend` yourself. |
 | **Engine** | Content-hash cache, concurrent `ask_many`, JSONL recording (Parquet with `--features parquet`). |
@@ -43,16 +43,16 @@ Not on crates.io yet, so take it from git:
 
 ```toml
 [dependencies]
-jev = { git = "https://github.com/heyaozh/jev-rust-crate" }
+system-one = { git = "https://github.com/heyaozh/jev-rust-crate" }
 tokio = { version = "1", features = ["full"] }
 ```
 
-Inside a checkout of this repo, `jev = { path = "jev" }` works too.
+Inside a checkout of this repo, `system-one = { path = "system-one" }` works too.
 
 ```rust
-use jev::prelude::*;
+use system_one::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Department {
     /// Invoices, payouts, charges, refunds.
     Billing,
@@ -62,18 +62,18 @@ enum Department {
     Spam,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct Triage {
-    #[jev("Which department should handle this ticket?")]
+    #[ask("Which department should handle this ticket?")]
     department: Choice<Department>,
-    #[jev("Is the customer explicitly asking for money back?")]
+    #[ask("Is the customer explicitly asking for money back?")]
     wants_refund: Noul,
-    #[jev("How urgent is this?", levels = ["Can wait a week", "Within a day", "Right now"])]
+    #[ask("How urgent is this?", levels = ["Can wait a week", "Within a day", "Right now"])]
     urgency: Score,
 }
 
 #[tokio::main]
-async fn main() -> jev::Result<()> {
+async fn main() -> system_one::Result<()> {
     // JEV_API_KEY=... in the environment; see examples for a Mock fallback.
     let engine = Engine::new(JevHttp::from_env().expect("JEV_API_KEY"))
         .with_recorder(Recorder::open("runs/triage.jsonl")?);
@@ -98,25 +98,25 @@ Three questions, one call, ~100 ms, and the routing rule is an explicit cost mat
 
 ### Try one question first
 
-Before writing any struct, try a question from the shell. `jev-ask` is a small
+Before writing any struct, try a question from the shell. `so-ask` is a small
 binary shipped with the crate; it builds the schema at runtime, so there is no
 Rust to write:
 
 ```bash
-cargo install --path jev        # once — puts `jev-ask` on your PATH
+cargo install --path system-one        # once — puts `so-ask` on your PATH
 export JEV_API_KEY=...          # without it you get a uniform Mock answer, and a note saying so
 
-jev-ask "Is this customer asking for a refund?" \
+so-ask "Is this customer asking for a refund?" \
   "my payouts failed for 3 days, I want the fees back"
 
-jev-ask --choice billing,technical,sales,spam \
+so-ask --choice billing,technical,sales,spam \
   "Which department should handle this?" "getting a 500 from /v1/orders"
 
-jev-ask --levels "Can wait a week,Within a day,Right now" \
+so-ask --levels "Can wait a week,Within a day,Right now" \
   "How urgent is this?" "my payouts have failed for 3 days"
 ```
 
-Without installing, from inside this repo: `cargo run --bin jev-ask -- <args>`.
+Without installing, from inside this repo: `cargo run --bin so-ask -- <args>`.
 
 It prints the full distribution, not just the arg-max — which is the whole point.
 
@@ -128,7 +128,7 @@ It prints the full distribution, not just the arg-max — which is the whole poi
 | `Choice<E>` | `choice` | `probabilities: Vec<(E, f64)>`, `chosen`, `confidence` |
 | `Score` | `score` | `probabilities: Vec<f64>` over levels, `value` (probability-weighted index), `legend`, `confidence` |
 
-`#[jev(...)]` field attributes: positional `"instructions"` (or a `///` doc comment), `levels = [...]` for `Score`, optional `yes = "…", no = "…"` criteria for `Noul`, `name = "…"` to override the wire name. Enum variants take `#[jev(key = "…", desc = "…")]` or a doc comment.
+`#[ask(...)]` field attributes: positional `"instructions"` (or a `///` doc comment), `levels = [...]` for `Score`, optional `yes = "…", no = "…"` criteria for `Noul`, `name = "…"` to override the wire name. Enum variants take `#[ask(key = "…", desc = "…")]` or a doc comment.
 
 ## Backends
 
@@ -173,11 +173,11 @@ let results = engine.ask_many::<NewsFeatures, _, _>(headlines).await;
 
 // 2. later, when reality has happened: join outcomes by state hash
 let mut outcomes = HashMap::new();
-outcomes.insert(jev::hash::hash_json(&serde_json::to_value(&h)?), json!({ "is_surprise": true }));
-jev::record::attach_outcomes("runs/news.jsonl", &outcomes)?;
+outcomes.insert(system_one::hash::hash_json(&serde_json::to_value(&h)?), json!({ "is_surprise": true }));
+system_one::record::attach_outcomes("runs/news.jsonl", &outcomes)?;
 
 // 3. did 0.85 mean 85 %?
-let records = jev::record::read_records("runs/news.jsonl")?;
+let records = system_one::record::read_records("runs/news.jsonl")?;
 println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).render());
 ```
 
@@ -192,7 +192,7 @@ Those rows, with outcomes attached, are also a labelled training set. `--feature
 
 ## Examples
 
-The `jev-ask` binary above covers one-off questions. The examples are the full loops:
+The `so-ask` binary above covers one-off questions. The examples are the full loops:
 
 | Example | Shows |
 |---|---|
@@ -235,7 +235,7 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 
 * `http` (default) — `JevHttp` and `LocalLogprob` (pulls in `reqwest` with rustls).
 * `derive` (default) — the derive macros.
-* `parquet` — `jev::record::export_parquet`.
+* `parquet` — `system_one::record::export_parquet`.
 
 ## Limits worth knowing
 
@@ -255,10 +255,12 @@ tests, all offline against `Mock`, plus every feature combination compiling on i
 **What is not:** the automated suite never calls the live API — it runs entirely on
 `Mock`, so it stays fast, free and deterministic. `JevHttp` has been exercised against
 the real endpoint by hand (September 2026) and the wire format held, but that is one
-person on one day, not a regression test. Point `jev-ask` at your own key before you
+person on one day, not a regression test. Point `so-ask` at your own key before you
 trust it with anything that matters; it is one command and it tells you immediately.
 
-Not affiliated with TypeSafe AI. `jev` here names the model it talks to, nothing more.
+Not affiliated with TypeSafe AI. *Jev* is their model; this is one unofficial client for it — and
+for anything else that answers the same shape of question. That is why the crate is not named
+after it.
 
 ## License
 

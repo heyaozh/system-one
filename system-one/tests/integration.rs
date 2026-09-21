@@ -2,39 +2,39 @@
 //! decision helpers, recording, replay, shadow and calibration — all
 //! offline via `Mock`.
 
-use jev::backend::{answers, Mock, Replay, Shadow};
-use jev::calibration::CalibrationReport;
-use jev::prelude::*;
-use jev::record::{attach_outcomes, read_records};
-use jev::{QuestionSpec, RawAnswer, RawAnswers};
 use std::collections::{BTreeMap, HashMap};
+use system_one::backend::{answers, Mock, Replay, Shadow};
+use system_one::calibration::CalibrationReport;
+use system_one::prelude::*;
+use system_one::record::{attach_outcomes, read_records};
+use system_one::{QuestionSpec, RawAnswer, RawAnswers};
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Dept {
     /// Money things.
     Billing,
-    #[jev(key = "tech", desc = "Bugs and APIs")]
+    #[ask(key = "tech", desc = "Bugs and APIs")]
     Technical,
     Sales,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 #[allow(dead_code)]
 struct Triage {
-    #[jev("Which department?")]
+    #[ask("Which department?")]
     dept: Choice<Dept>,
-    #[jev("Wants a refund?", yes = "asks for money back", no = "anything else")]
+    #[ask("Wants a refund?", yes = "asks for money back", no = "anything else")]
     refund: Noul,
-    #[jev("Urgency", levels = ["low", "mid", "high"])]
+    #[ask("Urgency", levels = ["low", "mid", "high"])]
     urgency: Score,
     /// Doc comments work as instructions too.
-    #[jev(name = "is_spam_wire")]
+    #[ask(name = "is_spam_wire")]
     is_spam: Noul,
 }
 
 #[test]
 fn choice_derive_exposes_keys_and_descriptions() {
-    use jev::JevChoice as _;
+    use system_one::AsChoice as _;
     assert_eq!(Dept::all(), &[Dept::Billing, Dept::Technical, Dept::Sales]);
     assert_eq!(Dept::Technical.key(), "tech");
     assert_eq!(Dept::Billing.key(), "billing");
@@ -47,7 +47,7 @@ fn choice_derive_exposes_keys_and_descriptions() {
 
 #[test]
 fn schema_matches_api_wire_format() {
-    use jev::JevQuestions as _;
+    use system_one::AsQuestions as _;
     let schema = Triage::schema();
     schema.validate().unwrap();
     let json = schema.to_api_json();
@@ -75,7 +75,7 @@ fn schema_matches_api_wire_format() {
 
 #[test]
 fn api_response_example_decodes() {
-    use jev::JevQuestions as _;
+    use system_one::AsQuestions as _;
     // Shapes copied from the official docs.
     let raw: RawAnswers = serde_json::from_value(serde_json::json!({
         "model": "jev-1.13.0",
@@ -105,7 +105,7 @@ fn api_response_example_decodes() {
 
 #[test]
 fn schema_mismatch_is_an_error_not_a_panic() {
-    use jev::JevQuestions as _;
+    use system_one::AsQuestions as _;
     let mut answers = BTreeMap::new();
     answers.insert(
         "dept".to_string(),
@@ -233,7 +233,7 @@ async fn record_replay_and_outcomes_roundtrip() {
     assert!(matches!(err, Error::NotRecorded { .. }));
 
     // 3. Attach an outcome and compute calibration.
-    let hash = jev::hash::hash_json(&serde_json::json!("x"));
+    let hash = system_one::hash::hash_json(&serde_json::json!("x"));
     let mut outcomes = HashMap::new();
     outcomes.insert(hash, serde_json::json!({ "refund": true }));
     assert_eq!(attach_outcomes(&path, &outcomes).unwrap(), 1);

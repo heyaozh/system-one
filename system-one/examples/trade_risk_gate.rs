@@ -10,9 +10,9 @@
 //!
 //! Run:  `cargo run --example trade_risk_gate`
 
-use jev::backend::{answers, DecisionBackend, Mock};
-use jev::prelude::*;
 use serde::Serialize;
+use system_one::backend::{answers, DecisionBackend, Mock};
+use system_one::prelude::*;
 
 #[derive(Debug, Serialize)]
 struct ProposedOrder {
@@ -33,7 +33,7 @@ struct GateState {
     proposed: ProposedOrder,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Verdict {
     Allow,
     /// Send to a human before execution.
@@ -41,16 +41,16 @@ enum Verdict {
     Block,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct RiskGate {
-    #[jev("Is the proposed order consistent with the stated mandate?")]
+    #[ask("Is the proposed order consistent with the stated mandate?")]
     within_mandate: Noul,
-    #[jev("Does the order look like wash trading or self-matching (buying and selling the same instrument in quick succession without economic purpose)?")]
+    #[ask("Does the order look like wash trading or self-matching (buying and selling the same instrument in quick succession without economic purpose)?")]
     wash_like: Noul,
-    #[jev("How severely would this order breach the position limit after execution?",
+    #[ask("How severely would this order breach the position limit after execution?",
           levels = ["No breach", "Minor breach (<10% over)", "Serious breach (>10% over)"])]
     breach: Score,
-    #[jev("Overall, what should the risk desk do with this order?")]
+    #[ask("Overall, what should the risk desk do with this order?")]
     verdict: Choice<Verdict>,
 }
 

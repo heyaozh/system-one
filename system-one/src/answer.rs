@@ -2,7 +2,7 @@
 //!
 //! * [`RawAnswer`] / [`RawAnswers`] mirror the API response.
 //! * [`Noul`], [`Choice`], [`Score`] are the typed views a
-//!   `#[derive(JevQuestions)]` struct is filled with. They carry the full
+//!   `#[derive(AsQuestions)]` struct is filled with. They carry the full
 //!   probability distribution, not just the arg-max, so downstream code can
 //!   make cost-aware decisions.
 
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 use crate::error::{Error, Result};
-use crate::traits::JevChoice;
+use crate::traits::AsChoice;
 
 // ---------------------------------------------------------------------------
 // Wire level
@@ -135,9 +135,9 @@ impl Noul {
     }
 }
 
-/// A calibrated distribution over the variants of a `#[derive(JevChoice)]` enum.
+/// A calibrated distribution over the variants of a `#[derive(AsChoice)]` enum.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Choice<E: JevChoice> {
+pub struct Choice<E: AsChoice> {
     /// Arg-max variant as reported by the backend.
     pub chosen: E,
     /// Probability of every variant, in the enum's declaration order.
@@ -146,7 +146,7 @@ pub struct Choice<E: JevChoice> {
     pub confidence: f64,
 }
 
-impl<E: JevChoice> Choice<E> {
+impl<E: AsChoice> Choice<E> {
     /// The most likely variant.
     pub fn argmax(&self) -> E {
         self.chosen

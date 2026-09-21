@@ -1,8 +1,8 @@
 <p align="center">
-  <img src="docs/logo.svg" alt="jev" width="120"/>
+  <img src="docs/logo.svg" alt="system-one" width="120"/>
 </p>
 
-# jev
+# system-one
 
 [English](README.md) · **中文**
 
@@ -22,12 +22,12 @@
 state（任何可序列化的东西）+ questions（有界的答案空间）→ 带概率的答案
 ```
 
-工单分流、交易前风控闸门、NPC 的反射层、给一百万条新闻标题打标——都是这个形状。`jev` 把这个形状固定下来，然后在上面堆你需要的工具：
+工单分流、交易前风控闸门、NPC 的反射层、给一百万条新闻标题打标——都是这个形状。`system-one` 把这个形状固定下来，然后在上面堆你需要的工具：
 
 | 层 | 提供什么 |
 |---|---|
 | **类型** | `Noul`（P(是)）、`Choice<E>`（枚举上的分布）、`Score`（有序等级上的分布）。保留完整分布，不只是 argmax。 |
-| **派生宏** | 枚举上 `#[derive(JevChoice)]`，结构体上 `#[derive(JevQuestions)]` → schema 自动生成，答案自动解析。编译期检查（≤255 个选项、2–10 个等级、字段类型）。 |
+| **派生宏** | 枚举上 `#[derive(AsChoice)]`，结构体上 `#[derive(AsQuestions)]` → schema 自动生成，答案自动解析。编译期检查（≤255 个选项、2–10 个等级、字段类型）。 |
 | **决策工具** | `decide(cost)` 用成本矩阵最小化期望损失；`entropy()` 用于主动学习；`sample()` 用于随机 agent。 |
 | **Backend** | `JevHttp`（官方 API）、`Mock`、`Replay`、`LocalLogprob`（你自己的模型，经 vLLM / llama.cpp）、`Shadow`（两个 backend 做 A/B）。也可以自己实现 `DecisionBackend`。 |
 | **Engine** | 内容哈希缓存、并发 `ask_many`、JSONL 记录（`--features parquet` 导出 Parquet）。 |
@@ -43,16 +43,16 @@ state（任何可序列化的东西）+ questions（有界的答案空间）→ 
 
 ```toml
 [dependencies]
-jev = { git = "https://github.com/heyaozh/jev-rust-crate" }
+system-one = { git = "https://github.com/heyaozh/jev-rust-crate" }
 tokio = { version = "1", features = ["full"] }
 ```
 
-在本仓库的 checkout 里，`jev = { path = "jev" }` 也可以。
+在本仓库的 checkout 里，`system-one = { path = "system-one" }` 也可以。
 
 ```rust
-use jev::prelude::*;
+use system_one::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Department {
     /// 账单、打款、扣费、退款。
     Billing,
@@ -62,18 +62,18 @@ enum Department {
     Spam,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct Triage {
-    #[jev("这张工单应该由哪个部门处理？")]
+    #[ask("这张工单应该由哪个部门处理？")]
     department: Choice<Department>,
-    #[jev("客户是否明确要求退钱？")]
+    #[ask("客户是否明确要求退钱？")]
     wants_refund: Noul,
-    #[jev("有多紧急？", levels = ["可以等一周", "一天内", "马上"])]
+    #[ask("有多紧急？", levels = ["可以等一周", "一天内", "马上"])]
     urgency: Score,
 }
 
 #[tokio::main]
-async fn main() -> jev::Result<()> {
+async fn main() -> system_one::Result<()> {
     // 环境变量 JEV_API_KEY=...；没有 key 时见 examples 里的 Mock 回退
     let engine = Engine::new(JevHttp::from_env().expect("JEV_API_KEY"))
         .with_recorder(Recorder::open("runs/triage.jsonl")?);
@@ -98,24 +98,24 @@ async fn main() -> jev::Result<()> {
 
 ### 先用一个问题试试
 
-写结构体之前，先在命令行上试一个问题。`jev-ask` 是 crate 自带的一个小可执行
+写结构体之前，先在命令行上试一个问题。`so-ask` 是 crate 自带的一个小可执行
 文件，schema 在运行时拼，不用写任何 Rust：
 
 ```bash
-cargo install --path jev        # 一次就行——把 `jev-ask` 放进 PATH
+cargo install --path system-one        # 一次就行——把 `so-ask` 放进 PATH
 export JEV_API_KEY=...          # 没设就用 uniform Mock 回答，并会打印一行提示
 
-jev-ask "这位客户是在要求退款吗？" \
+so-ask "这位客户是在要求退款吗？" \
   "我的打款三天没到，手续费也想退"
 
-jev-ask --choice billing,technical,sales,spam \
+so-ask --choice billing,technical,sales,spam \
   "应该由哪个部门处理？" "调 /v1/orders 一直 500"
 
-jev-ask --levels "可以等一周,一天之内,马上" \
+so-ask --levels "可以等一周,一天之内,马上" \
   "这有多紧急？" "我的打款已经三天没到了"
 ```
 
-不想装的话，在仓库里直接跑：`cargo run --bin jev-ask -- <参数>`。
+不想装的话，在仓库里直接跑：`cargo run --bin so-ask -- <参数>`。
 
 打印的是完整分布，不只是 argmax——这正是重点。
 
@@ -127,7 +127,7 @@ jev-ask --levels "可以等一周,一天之内,马上" \
 | `Choice<E>` | `choice` | `probabilities: Vec<(E, f64)>`、`chosen`、`confidence` |
 | `Score` | `score` | 各等级的 `probabilities: Vec<f64>`、`value`（概率加权的等级索引）、`legend`、`confidence` |
 
-`#[jev(...)]` 字段属性：位置参数 `"问题文本"`（或 `///` 文档注释）；`Score` 需要 `levels = [...]`；`Noul` 可选 `yes = "…", no = "…"` 判据；`name = "…"` 覆盖线上字段名。枚举变体用 `#[jev(key = "…", desc = "…")]` 或文档注释。
+`#[ask(...)]` 字段属性：位置参数 `"问题文本"`（或 `///` 文档注释）；`Score` 需要 `levels = [...]`；`Noul` 可选 `yes = "…", no = "…"` 判据；`name = "…"` 覆盖线上字段名。枚举变体用 `#[ask(key = "…", desc = "…")]` 或文档注释。
 
 ## Backend
 
@@ -172,11 +172,11 @@ let results = engine.ask_many::<NewsFeatures, _, _>(headlines).await;
 
 // 2. 之后，现实发生了：按状态哈希把结果 join 回去
 let mut outcomes = HashMap::new();
-outcomes.insert(jev::hash::hash_json(&serde_json::to_value(&h)?), json!({ "is_surprise": true }));
-jev::record::attach_outcomes("runs/news.jsonl", &outcomes)?;
+outcomes.insert(system_one::hash::hash_json(&serde_json::to_value(&h)?), json!({ "is_surprise": true }));
+system_one::record::attach_outcomes("runs/news.jsonl", &outcomes)?;
 
 // 3. 0.85 真的是 85% 吗？
-let records = jev::record::read_records("runs/news.jsonl")?;
+let records = system_one::record::read_records("runs/news.jsonl")?;
 println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).render());
 ```
 
@@ -184,7 +184,7 @@ println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).rend
 
 ## 示例
 
-一次性的问题用上面的 `jev-ask`；下面这些示例是完整的闭环：
+一次性的问题用上面的 `so-ask`；下面这些示例是完整的闭环：
 
 | 示例 | 展示 |
 |---|---|
@@ -226,7 +226,7 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 
 * `http`（默认）——`JevHttp` 和 `LocalLogprob`（引入 rustls 版 `reqwest`）。
 * `derive`（默认）——派生宏。
-* `parquet`——`jev::record::export_parquet`。
+* `parquet`——`system_one::record::export_parquet`。
 
 ## 值得知道的限制
 
@@ -246,9 +246,10 @@ replay、shadow 和校准数学——11 个集成测试，全部离线跑在 `Mo
 **未验证的部分**：自动化测试从不调用真实 API——它全部跑在 `Mock` 上，因而快、免费、
 可复现。`JevHttp` 已经手动打过真实 endpoint（2026 年 9 月），线格式当时是对的，但那是
 一个人在某一天的一次调用，不是回归测试。在把它用在要紧的地方之前，先拿你自己的 key
-跑一次 `jev-ask`——一条命令，立刻就知道。
+跑一次 `so-ask`——一条命令，立刻就知道。
 
-与 TypeSafe AI 无关联。这里的 `jev` 只是它所对话的模型的名字，别无他意。
+与 TypeSafe AI 无关联。*Jev* 是他们的模型；这里是它的一个非官方客户端——同时也是任何
+其它能回答同一形状问题的模型的客户端。crate 不用它命名，正是因为这一点。
 
 ## 许可证
 

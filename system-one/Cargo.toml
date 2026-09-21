@@ -1,7 +1,7 @@
 [package]
-name = "jev"
-description = "Typed, calibrated decisions for Rust: a backend-agnostic client for TypeSafe AI's Jev (System One) API and for your own decision models"
-keywords = ["jev", "typesafe", "classifier", "calibration", "decision"]
+name = "system-one"
+description = "Typed, calibrated decisions for Rust: a backend-agnostic client for System One models — TypeSafe AI's Jev, a mock, a recording, or your own fine-tune — with cost-matrix decisions, recording and calibration"
+keywords = ["jev", "typesafe", "system-one", "calibration", "decision"]
 categories = ["api-bindings", "science"]
 readme = "../README.md"
 version.workspace = true
@@ -15,12 +15,12 @@ default = ["http", "derive"]
 # Official Jev HTTP backend and the OpenAI-compatible logprob backend.
 http = ["dep:reqwest"]
 # Re-export the derive macros.
-derive = ["dep:jev-derive"]
+derive = ["dep:system-one-derive"]
 # Export JSONL recordings to Parquet.
 parquet = ["dep:arrow", "dep:parquet"]
 
 [dependencies]
-jev-derive = { version = "0.1.0", path = "../jev-derive", optional = true }
+system-one-derive = { version = "0.1.0", path = "../system-one-derive", optional = true }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 thiserror = "2"
@@ -40,7 +40,7 @@ tokio = { version = "1", features = ["full"] }
 tempfile = "3"
 
 [[bin]]
-name = "jev-ask"
+name = "so-ask"
 required-features = ["http"]
 
 [[example]]

@@ -1,6 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["jev", "jev-derive"]
+members = ["system-one", "system-one-derive"]
 
 [workspace.package]
 version = "0.1.0"

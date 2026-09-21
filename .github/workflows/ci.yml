@@ -29,10 +29,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       # Every backend is feature-gated; each of these must compile on its own.
-      - run: cargo check -p jev --no-default-features
-      - run: cargo check -p jev --no-default-features --features derive
-      - run: cargo check -p jev --no-default-features --features http
-      - run: cargo check -p jev --features parquet
+      - run: cargo check -p system-one --no-default-features
+      - run: cargo check -p system-one --no-default-features --features derive
+      - run: cargo check -p system-one --no-default-features --features http
+      - run: cargo check -p system-one --features parquet
 
   lint:
     name: fmt & clippy

@@ -16,22 +16,22 @@
 //!
 //! Without those variables the example explains what it would do and exits.
 
-use jev::backend::Mock;
-use jev::prelude::*;
-use jev::record::read_records;
+use system_one::backend::Mock;
+use system_one::prelude::*;
+use system_one::record::read_records;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Direction {
     Up,
     Down,
     Flat,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct HeadlineView {
-    #[jev("Given only this headline, which direction is the named company's share price more likely to move over the next hour?")]
+    #[ask("Given only this headline, which direction is the named company's share price more likely to move over the next hour?")]
     direction: Choice<Direction>,
-    #[jev("Is the information in the headline likely already priced in (widely expected beforehand)?")]
+    #[ask("Is the information in the headline likely already priced in (widely expected beforehand)?")]
     priced_in: Noul,
 }
 
@@ -55,11 +55,11 @@ async fn demo_with_mock() -> Result<()> {
     run(Shadow::new(primary, shadow)).await
 }
 
-async fn run<B: jev::backend::DecisionBackend>(backend: B) -> Result<()> {
+async fn run<B: system_one::backend::DecisionBackend>(backend: B) -> Result<()> {
     let path = "runs/shadow.jsonl";
     let _ = std::fs::remove_file(path);
-    let backend =
-        jev::backend::Shadow::new(backend, Mock::uniform().with_id("mock:noop")).with_recorder(Recorder::open(path)?);
+    let backend = system_one::backend::Shadow::new(backend, Mock::uniform().with_id("mock:noop"))
+        .with_recorder(Recorder::open(path)?);
     // ^ In real use you would pass the Shadow directly; wrapping again here
     //   only serves to keep this function generic over any backend.
     let engine = Engine::new(backend);
@@ -83,6 +83,6 @@ async fn run<B: jev::backend::DecisionBackend>(backend: B) -> Result<()> {
     let primary = records.iter().filter(|r| r.tag.as_deref() == Some("primary")).count();
     let shadow = records.iter().filter(|r| r.tag.as_deref() == Some("shadow")).count();
     println!("\nrecorded {primary} primary + {shadow} shadow answers to {path}");
-    println!("attach outcomes later with jev::record::attach_outcomes, then compare\n  CalibrationReport::from_records(primary_only, \"direction\", 10)\nagainst the shadow subset.");
+    println!("attach outcomes later with system_one::record::attach_outcomes, then compare\n  CalibrationReport::from_records(primary_only, \"direction\", 10)\nagainst the shadow subset.");
     Ok(())
 }

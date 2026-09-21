@@ -1,10 +1,10 @@
-//! Derive macros for the `jev` crate.
+//! Derive macros for the `system-one` crate.
 //!
-//! * `#[derive(JevChoice)]` on a unit-variant enum → the options of a `choice`.
-//! * `#[derive(JevQuestions)]` on a struct of `Noul` / `Choice<E>` / `Score`
+//! * `#[derive(AsChoice)]` on a unit-variant enum → the options of a `choice`.
+//! * `#[derive(AsQuestions)]` on a struct of `Noul` / `Choice<E>` / `Score`
 //!   fields → a question schema and a typed decoder.
 //!
-//! See the `jev` crate documentation for usage; this crate is not meant to
+//! See the `system-one` crate documentation for usage; this crate is not meant to
 //! be used directly.
 
 use heck::ToSnakeCase;
@@ -19,7 +19,7 @@ use syn::{
 };
 
 // ---------------------------------------------------------------------------
-// #[derive(JevChoice)]
+// #[derive(AsChoice)]
 // ---------------------------------------------------------------------------
 
 /// Derive the options of a `choice` question from a unit-variant enum.
@@ -27,10 +27,10 @@ use syn::{
 /// The enum must also derive (or implement) `Clone, Copy, PartialEq, Debug`.
 ///
 /// Attributes on variants:
-/// * `#[jev(key = "wire_key")]` — override the option key (default: snake_case variant name).
-/// * `#[jev(desc = "…")]` or a `///` doc comment — description sent to the backend.
-#[proc_macro_derive(JevChoice, attributes(jev))]
-pub fn derive_jev_choice(input: TokenStream) -> TokenStream {
+/// * `#[ask(key = "wire_key")]` — override the option key (default: snake_case variant name).
+/// * `#[ask(desc = "…")]` or a `///` doc comment — description sent to the backend.
+#[proc_macro_derive(AsChoice, attributes(ask))]
+pub fn derive_as_choice(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     match expand_choice(&input) {
         Ok(ts) => ts.into(),
@@ -41,7 +41,7 @@ pub fn derive_jev_choice(input: TokenStream) -> TokenStream {
 fn expand_choice(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let name = &input.ident;
     let Data::Enum(data) = &input.data else {
-        return Err(syn::Error::new_spanned(name, "JevChoice can only be derived for enums"));
+        return Err(syn::Error::new_spanned(name, "AsChoice can only be derived for enums"));
     };
     if data.variants.len() > 255 {
         return Err(syn::Error::new_spanned(name, "a choice may have at most 255 options"));
@@ -57,10 +57,10 @@ fn expand_choice(input: &DeriveInput) -> syn::Result<TokenStream2> {
         if !matches!(v.fields, Fields::Unit) {
             return Err(syn::Error::new_spanned(
                 &v.ident,
-                "JevChoice variants must be unit variants",
+                "AsChoice variants must be unit variants",
             ));
         }
-        let args = JevArgs::from_attrs(&v.attrs)?;
+        let args = AskArgs::from_attrs(&v.attrs)?;
         let key = args.key.unwrap_or_else(|| v.ident.to_string().to_snake_case());
         let desc = args.desc.or_else(|| doc_comment(&v.attrs));
         idents.push(&v.ident);
@@ -72,7 +72,7 @@ fn expand_choice(input: &DeriveInput) -> syn::Result<TokenStream2> {
     }
 
     Ok(quote! {
-        impl ::jev::__private::JevChoice for #name {
+        impl ::system_one::__private::AsChoice for #name {
             fn all() -> &'static [Self] {
                 const ALL: &[#name] = &[ #( #name::#idents ),* ];
                 ALL
@@ -91,20 +91,20 @@ fn expand_choice(input: &DeriveInput) -> syn::Result<TokenStream2> {
 }
 
 // ---------------------------------------------------------------------------
-// #[derive(JevQuestions)]
+// #[derive(AsQuestions)]
 // ---------------------------------------------------------------------------
 
 /// Derive a question schema and decoder from a struct.
 ///
-/// Every field must be `Noul`, `Choice<E>` (with `E: JevChoice`) or `Score`.
+/// Every field must be `Noul`, `Choice<E>` (with `E: AsChoice`) or `Score`.
 ///
-/// Field attributes (`#[jev(...)]`):
+/// Field attributes (`#[ask(...)]`):
 /// * `"instructions"` (positional) or `instructions = "…"` — the question text (required).
 /// * `levels = ["Low", "Mid", "High"]` — for `Score`: 2–10 ordered level descriptions (required).
 /// * `yes = "…"`, `no = "…"` — for `Noul`: optional explicit criteria.
 /// * `name = "wire_name"` — override the question name (default: field name).
-#[proc_macro_derive(JevQuestions, attributes(jev))]
-pub fn derive_jev_questions(input: TokenStream) -> TokenStream {
+#[proc_macro_derive(AsQuestions, attributes(ask))]
+pub fn derive_as_questions(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     match expand_questions(&input) {
         Ok(ts) => ts.into(),
@@ -124,11 +124,11 @@ fn expand_questions(input: &DeriveInput) -> syn::Result<TokenStream2> {
     let Data::Struct(data) = &input.data else {
         return Err(syn::Error::new_spanned(
             name,
-            "JevQuestions can only be derived for structs",
+            "AsQuestions can only be derived for structs",
         ));
     };
     let Fields::Named(fields) = &data.fields else {
-        return Err(syn::Error::new_spanned(name, "JevQuestions needs named fields"));
+        return Err(syn::Error::new_spanned(name, "AsQuestions needs named fields"));
     };
 
     let mut schema_inserts = Vec::new();
@@ -137,61 +137,61 @@ fn expand_questions(input: &DeriveInput) -> syn::Result<TokenStream2> {
 
     for f in &fields.named {
         let ident = f.ident.as_ref().unwrap();
-        let args = JevArgs::from_attrs(&f.attrs)?;
+        let args = AskArgs::from_attrs(&f.attrs)?;
         let wire = args.name.clone().unwrap_or_else(|| ident.to_string());
         let instructions = args
             .instructions
             .clone()
             .or_else(|| doc_comment(&f.attrs))
-            .ok_or_else(|| syn::Error::new_spanned(ident, "missing #[jev(\"instructions\")] (or a doc comment)"))?;
+            .ok_or_else(|| syn::Error::new_spanned(ident, "missing #[ask(\"instructions\")] (or a doc comment)"))?;
 
         match field_kind(&f.ty)? {
             FieldKind::Noul => {
                 let criteria = match (&args.yes, &args.no) {
                     (Some(y), Some(n)) => quote! {
-                        ::core::option::Option::Some(::jev::__private::NoulCriteria { yes: #y.to_string(), no: #n.to_string() })
+                        ::core::option::Option::Some(::system_one::__private::NoulCriteria { yes: #y.to_string(), no: #n.to_string() })
                     },
                     (None, None) => quote! { ::core::option::Option::None },
                     _ => return Err(syn::Error::new_spanned(ident, "`yes` and `no` must be given together")),
                 };
                 schema_inserts.push(quote! {
-                    schema.insert(#wire, ::jev::__private::QuestionSpec::Noul {
+                    schema.insert(#wire, ::system_one::__private::QuestionSpec::Noul {
                         instructions: #instructions.to_string(),
                         criteria: #criteria,
                     });
                 });
                 field_decoders.push(quote! {
-                    #ident: ::jev::__private::Noul::from_raw(#wire, raw.get(#wire)?)?,
+                    #ident: ::system_one::__private::Noul::from_raw(#wire, raw.get(#wire)?)?,
                 });
             }
             FieldKind::Choice(enum_ty) => {
                 schema_inserts.push(quote! {
-                    schema.insert(#wire, ::jev::__private::QuestionSpec::Choice {
+                    schema.insert(#wire, ::system_one::__private::QuestionSpec::Choice {
                         instructions: #instructions.to_string(),
-                        criteria: <#enum_ty as ::jev::__private::JevChoice>::criteria(),
+                        criteria: <#enum_ty as ::system_one::__private::AsChoice>::criteria(),
                     });
                 });
                 field_decoders.push(quote! {
-                    #ident: ::jev::__private::Choice::<#enum_ty>::from_raw(#wire, raw.get(#wire)?)?,
+                    #ident: ::system_one::__private::Choice::<#enum_ty>::from_raw(#wire, raw.get(#wire)?)?,
                 });
             }
             FieldKind::Score => {
                 let levels = args
                     .levels
                     .clone()
-                    .ok_or_else(|| syn::Error::new_spanned(ident, "Score fields need #[jev(levels = [\"…\", …])]"))?;
+                    .ok_or_else(|| syn::Error::new_spanned(ident, "Score fields need #[ask(levels = [\"…\", …])]"))?;
                 if levels.len() < 2 || levels.len() > 10 {
                     return Err(syn::Error::new_spanned(ident, "a score needs 2 to 10 levels"));
                 }
-                let levels_fn = format_ident!("__jev_levels_{}", ident);
+                let levels_fn = format_ident!("__so_levels_{}", ident);
                 schema_inserts.push(quote! {
-                    schema.insert(#wire, ::jev::__private::QuestionSpec::Score {
+                    schema.insert(#wire, ::system_one::__private::QuestionSpec::Score {
                         instructions: #instructions.to_string(),
                         criteria: Self::#levels_fn(),
                     });
                 });
                 field_decoders.push(quote! {
-                    #ident: ::jev::__private::Score::from_raw(#wire, raw.get(#wire)?, &Self::#levels_fn())?,
+                    #ident: ::system_one::__private::Score::from_raw(#wire, raw.get(#wire)?, &Self::#levels_fn())?,
                 });
                 // A tiny helper so schema() and from_raw() share one source of truth.
                 helpers.push(quote! {
@@ -208,13 +208,13 @@ fn expand_questions(input: &DeriveInput) -> syn::Result<TokenStream2> {
         impl #name {
             #( #helpers )*
         }
-        impl ::jev::__private::JevQuestions for #name {
-            fn schema() -> ::jev::__private::QuestionSchema {
-                let mut schema = ::jev::__private::QuestionSchema::new();
+        impl ::system_one::__private::AsQuestions for #name {
+            fn schema() -> ::system_one::__private::QuestionSchema {
+                let mut schema = ::system_one::__private::QuestionSchema::new();
                 #( #schema_inserts )*
                 schema
             }
-            fn from_raw(raw: &::jev::__private::RawAnswers) -> ::jev::__private::Result<Self> {
+            fn from_raw(raw: &::system_one::__private::RawAnswers) -> ::system_one::__private::Result<Self> {
                 ::core::result::Result::Ok(Self {
                     #( #field_decoders )*
                 })
@@ -257,11 +257,11 @@ fn field_kind(ty: &Type) -> syn::Result<FieldKind> {
 }
 
 // ---------------------------------------------------------------------------
-// #[jev(...)] attribute parsing
+// #[ask(...)] attribute parsing
 // ---------------------------------------------------------------------------
 
 #[derive(Default)]
-struct JevArgs {
+struct AskArgs {
     instructions: Option<String>,
     levels: Option<Vec<String>>,
     yes: Option<String>,
@@ -288,12 +288,12 @@ impl Parse for Arg {
     }
 }
 
-impl JevArgs {
+impl AskArgs {
     fn from_attrs(attrs: &[Attribute]) -> syn::Result<Self> {
-        let mut out = JevArgs::default();
-        for attr in attrs.iter().filter(|a| a.path().is_ident("jev")) {
+        let mut out = AskArgs::default();
+        for attr in attrs.iter().filter(|a| a.path().is_ident("ask")) {
             let Meta::List(list) = &attr.meta else {
-                return Err(syn::Error::new_spanned(attr, "expected #[jev(...)]"));
+                return Err(syn::Error::new_spanned(attr, "expected #[ask(...)]"));
             };
             let args = list.parse_args_with(Punctuated::<Arg, Token![,]>::parse_terminated)?;
             for a in args {
@@ -310,7 +310,7 @@ impl JevArgs {
                         other => {
                             return Err(syn::Error::new_spanned(
                                 id,
-                                format!("unknown jev attribute `{other}` (expected instructions, levels, yes, no, name, key, desc)"),
+                                format!("unknown ask attribute `{other}` (expected instructions, levels, yes, no, name, key, desc)"),
                             ))
                         }
                     },

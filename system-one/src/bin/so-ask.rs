@@ -1,33 +1,33 @@
-//! `jev-ask` — ask *one* question from the command line.
+//! `so-ask` — ask *one* question from the command line.
 //!
 //! The smallest possible loop: a question, a piece of state, a calibrated
 //! answer. No structs, no derive — the schema is built at runtime, so this
 //! doubles as a scratchpad for trying a question out before you commit it to
-//! a `#[derive(JevQuestions)]` type.
+//! a `#[derive(AsQuestions)]` type.
 //!
-//! Install it once (`cargo install --path jev`), then:
+//! Install it once (`cargo install --path system-one`), then:
 //!
 //! ```text
 //! # yes/no (a `noul`)
-//! jev-ask "Is this customer asking for a refund?" "my payouts failed, I want the fees back"
+//! so-ask "Is this customer asking for a refund?" "my payouts failed, I want the fees back"
 //!
 //! # pick one (a `choice`)
-//! jev-ask --choice billing,technical,sales,spam \
+//! so-ask --choice billing,technical,sales,spam \
 //!     "Which department should handle this?" "getting a 500 from /v1/orders"
 //!
 //! # ordered scale (a `score`)
-//! jev-ask --levels "Can wait a week,Within a day,Right now" \
+//! so-ask --levels "Can wait a week,Within a day,Right now" \
 //!     "How urgent is this?" "my payouts have failed for 3 days"
 //! ```
 //!
-//! From inside this repo without installing: `cargo run --bin jev-ask -- <args>`.
+//! From inside this repo without installing: `cargo run --bin so-ask -- <args>`.
 //!
 //! With `JEV_API_KEY` set the question goes to the real API; without it you
 //! get a uniform mock answer so the plumbing still runs (and says so).
 
-use jev::backend::{DecisionBackend, Mock};
-use jev::prelude::*;
-use jev::schema::{QuestionSchema, QuestionSpec};
+use system_one::backend::{DecisionBackend, Mock};
+use system_one::prelude::*;
+use system_one::schema::{QuestionSchema, QuestionSpec};
 
 const NAME: &str = "q";
 
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
     let (question, state) = match (args.first(), args.get(1)) {
         (Some(q), Some(s)) => (q.clone(), s.clone()),
         _ => {
-            eprintln!("usage: jev-ask [--choice a,b,c | --levels \"low,high\"] <question> <state>");
+            eprintln!("usage: so-ask [--choice a,b,c | --levels \"low,high\"] <question> <state>");
             std::process::exit(2);
         }
     };
@@ -87,12 +87,12 @@ fn main() -> Result<()> {
     println!("state:    {state}");
     println!("model:    {}", if raw.model.is_empty() { "<mock>" } else { &raw.model });
     match raw.get(NAME)? {
-        jev::answer::RawAnswer::Noul { noul, .. } => {
+        system_one::answer::RawAnswer::Noul { noul, .. } => {
             let n = Noul::new(*noul);
             println!("P(yes):   {:.3}", n.p);
             println!("decide:   yes={} at a 1:1 cost ratio", n.decide(1.0, 1.0));
         }
-        jev::answer::RawAnswer::Choice {
+        system_one::answer::RawAnswer::Choice {
             choice,
             probabilities,
             confidence,
@@ -104,7 +104,7 @@ fn main() -> Result<()> {
                 println!("  {p:>6.3}  {k}");
             }
         }
-        jev::answer::RawAnswer::Score {
+        system_one::answer::RawAnswer::Score {
             score,
             legend,
             probabilities,

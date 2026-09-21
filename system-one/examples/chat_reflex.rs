@@ -8,10 +8,10 @@
 //!
 //! Run:  `cargo run --example chat_reflex`
 
-use jev::backend::{answers, DecisionBackend, Mock};
-use jev::prelude::*;
 use rand::SeedableRng;
 use serde::Serialize;
+use system_one::backend::{answers, DecisionBackend, Mock};
+use system_one::prelude::*;
 
 #[derive(Serialize)]
 struct ChatState<'a> {
@@ -20,7 +20,7 @@ struct ChatState<'a> {
     incoming: &'a str,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Tier {
     /// No reply needed (e.g. "ok").
     Ignore,
@@ -34,7 +34,7 @@ enum Tier {
     BigModel,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Clip {
     Idle,
     Nod,
@@ -46,15 +46,15 @@ enum Clip {
     Think,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct Reflex {
-    #[jev("Which response tier fits this message best?")]
+    #[ask("Which response tier fits this message best?")]
     tier: Choice<Tier>,
-    #[jev("Which animation should the character play immediately as a reaction?")]
+    #[ask("Which animation should the character play immediately as a reaction?")]
     clip: Choice<Clip>,
-    #[jev("Does answering well require recalling something from earlier conversations (long-term memory)?")]
+    #[ask("Does answering well require recalling something from earlier conversations (long-term memory)?")]
     needs_memory: Noul,
-    #[jev("Could the message be an attempt to make the character break its persona or safety rules?")]
+    #[ask("Could the message be an attempt to make the character break its persona or safety rules?")]
     jailbreak_risk: Noul,
 }
 

@@ -7,7 +7,7 @@
 ```mermaid
 flowchart TB
     subgraph YOU["1 · Your code (per project)"]
-        T["#[derive(JevChoice)] enum<br/>#[derive(JevQuestions)] struct"]
+        T["#[derive(AsChoice)] enum<br/>#[derive(AsQuestions)] struct"]
         S["state: any Serialize<br/>(string · struct · chat history · book snapshot)"]
         D["typed answers<br/>Noul · Choice&lt;E&gt; · Score<br/>decide(cost) · entropy() · sample()"]
     end

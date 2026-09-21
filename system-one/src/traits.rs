@@ -3,16 +3,16 @@
 //! You normally never implement these by hand:
 //!
 //! ```ignore
-//! #[derive(JevChoice)]
+//! #[derive(AsChoice)]
 //! enum Department { Billing, Technical, Sales }
 //!
-//! #[derive(JevQuestions)]
+//! #[derive(AsQuestions)]
 //! struct Triage {
-//!     #[jev("Which department should handle this?")]
+//!     #[ask("Which department should handle this?")]
 //!     department: Choice<Department>,
-//!     #[jev("Does the customer ask for a refund?")]
+//!     #[ask("Does the customer ask for a refund?")]
 //!     wants_refund: Noul,
-//!     #[jev("How urgent is this?", levels = ["Can wait", "Today", "Right now"])]
+//!     #[ask("How urgent is this?", levels = ["Can wait", "Today", "Right now"])]
 //!     urgency: Score,
 //! }
 //! ```
@@ -23,11 +23,11 @@ use crate::schema::QuestionSchema;
 
 /// An enum whose variants are the options of a `choice` question.
 ///
-/// Implemented by `#[derive(JevChoice)]`. Variant keys default to the
-/// `snake_case` variant name; override with `#[jev(key = "...")]`. A doc
-/// comment or `#[jev(desc = "...")]` becomes the option description sent to
+/// Implemented by `#[derive(AsChoice)]`. Variant keys default to the
+/// `snake_case` variant name; override with `#[ask(key = "...")]`. A doc
+/// comment or `#[ask(desc = "...")]` becomes the option description sent to
 /// the backend.
-pub trait JevChoice: Copy + PartialEq + std::fmt::Debug + Send + Sync + 'static {
+pub trait AsChoice: Copy + PartialEq + std::fmt::Debug + Send + Sync + 'static {
     /// Every variant, in declaration order.
     fn all() -> &'static [Self];
     /// Wire key of this variant.
@@ -48,9 +48,9 @@ pub trait JevChoice: Copy + PartialEq + std::fmt::Debug + Send + Sync + 'static 
 
 /// A struct whose fields are the questions asked against one state.
 ///
-/// Implemented by `#[derive(JevQuestions)]`. Field types must be
+/// Implemented by `#[derive(AsQuestions)]`. Field types must be
 /// [`crate::Noul`], [`crate::Choice<E>`] or [`crate::Score`].
-pub trait JevQuestions: Sized + Send + 'static {
+pub trait AsQuestions: Sized + Send + 'static {
     /// The schema sent to the backend.
     fn schema() -> QuestionSchema;
     /// Fill the struct from raw answers, validating against the schema.

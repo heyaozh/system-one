@@ -14,12 +14,12 @@
 //! Run:  `cargo run --example batch_and_calibrate`
 //!       `cargo run --example batch_and_calibrate --features parquet`
 
-use jev::backend::{answers, DecisionBackend, Mock};
-use jev::prelude::*;
-use jev::record::{attach_outcomes, read_records};
 use rand::{Rng, SeedableRng};
 use serde::Serialize;
 use std::collections::HashMap;
+use system_one::backend::{answers, DecisionBackend, Mock};
+use system_one::prelude::*;
+use system_one::record::{attach_outcomes, read_records};
 
 #[derive(Clone, Serialize)]
 struct Headline {
@@ -27,7 +27,7 @@ struct Headline {
     text: String,
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Topic {
     Earnings,
     Regulation,
@@ -35,14 +35,14 @@ enum Topic {
     Other,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 #[allow(dead_code)]
 struct NewsFeatures {
-    #[jev("Does the headline describe an event that was not previously scheduled or expected?")]
+    #[ask("Does the headline describe an event that was not previously scheduled or expected?")]
     is_surprise: Noul,
-    #[jev("Is the headline about a merger, acquisition or takeover?")]
+    #[ask("Is the headline about a merger, acquisition or takeover?")]
     is_m_and_a: Noul,
-    #[jev("What is the main topic of the headline?")]
+    #[ask("What is the main topic of the headline?")]
     topic: Choice<Topic>,
 }
 
@@ -149,7 +149,7 @@ async fn main() -> Result<()> {
         } else {
             "other"
         };
-        let state_hash = jev::hash::hash_json(&serde_json::to_value(h)?);
+        let state_hash = system_one::hash::hash_json(&serde_json::to_value(h)?);
         outcomes.insert(
             state_hash,
             serde_json::json!({ "is_surprise": truly_surprising, "is_m_and_a": truly_m_and_a, "topic": topic }),
@@ -168,7 +168,7 @@ async fn main() -> Result<()> {
     #[cfg(feature = "parquet")]
     {
         let out = "runs/news_features.parquet";
-        let n = jev::record::export_parquet(path, out)?;
+        let n = system_one::record::export_parquet(path, out)?;
         println!("exported {n} rows to {out}");
     }
     Ok(())

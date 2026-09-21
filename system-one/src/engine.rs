@@ -12,7 +12,7 @@ use crate::error::Result;
 use crate::hash::hash_json;
 use crate::record::{Record, Recorder};
 use crate::schema::QuestionSchema;
-use crate::traits::JevQuestions;
+use crate::traits::AsQuestions;
 
 /// Ask typed questions against any backend.
 ///
@@ -70,7 +70,7 @@ impl<B: DecisionBackend> Engine<B> {
     }
 
     /// Ask the questions of `Q` against `state` and get a typed `Q` back.
-    pub async fn ask<Q: JevQuestions, S: Serialize + ?Sized>(&self, state: &S) -> Result<Q> {
+    pub async fn ask<Q: AsQuestions, S: Serialize + ?Sized>(&self, state: &S) -> Result<Q> {
         let raw = self.ask_raw(state, &Q::schema()).await?;
         Q::from_raw(&raw)
     }
@@ -103,7 +103,7 @@ impl<B: DecisionBackend> Engine<B> {
     /// the batch: each element is its own `Result`.
     pub async fn ask_many<Q, S, I>(&self, states: I) -> Vec<Result<Q>>
     where
-        Q: JevQuestions,
+        Q: AsQuestions,
         S: Serialize + Send + Sync,
         I: IntoIterator<Item = S>,
     {
@@ -118,7 +118,7 @@ impl<B: DecisionBackend> Engine<B> {
     /// Same as [`Engine::ask_many`] but returns the state alongside its answer.
     pub async fn ask_many_with<Q, S, I>(&self, states: I) -> Vec<(S, Result<Q>)>
     where
-        Q: JevQuestions,
+        Q: AsQuestions,
         S: Serialize + Send + Sync,
         I: IntoIterator<Item = S>,
     {

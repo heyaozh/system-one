@@ -1,6 +1,6 @@
 [package]
-name = "jev-derive"
-description = "Derive macros for the `jev` crate: map Rust enums and structs to typed decision schemas"
+name = "system-one-derive"
+description = "Derive macros for the `system-one` crate: map Rust enums and structs to typed decision schemas"
 version.workspace = true
 edition.workspace = true
 license.workspace = true

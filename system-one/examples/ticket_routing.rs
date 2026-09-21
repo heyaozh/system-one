@@ -7,10 +7,10 @@
 //! Run:  `cargo run --example ticket_routing`
 //! With the real API: `JEV_API_KEY=... cargo run --example ticket_routing`
 
-use jev::backend::{answers, DecisionBackend, Mock};
-use jev::prelude::*;
+use system_one::backend::{answers, DecisionBackend, Mock};
+use system_one::prelude::*;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug, JevChoice)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, AsChoice)]
 enum Department {
     /// Invoices, payouts, charges, refunds.
     Billing,
@@ -22,13 +22,13 @@ enum Department {
     Spam,
 }
 
-#[derive(Debug, JevQuestions)]
+#[derive(Debug, AsQuestions)]
 struct Triage {
-    #[jev("Which department should handle this ticket?")]
+    #[ask("Which department should handle this ticket?")]
     department: Choice<Department>,
-    #[jev("Is the customer explicitly asking for money back?")]
+    #[ask("Is the customer explicitly asking for money back?")]
     wants_refund: Noul,
-    #[jev("How urgent is this for the customer?", levels = ["Can wait a week", "Within a day", "Right now"])]
+    #[ask("How urgent is this for the customer?", levels = ["Can wait a week", "Within a day", "Right now"])]
     urgency: Score,
 }
 

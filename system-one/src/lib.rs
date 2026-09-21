@@ -1,26 +1,26 @@
-//! # jev
+//! # system-one
 //!
 //! Typed, calibrated decisions for Rust.
 //!
-//! `jev` is a backend-agnostic client for *System One* style models — models
+//! `system-one` is a backend-agnostic client for *System One* style models — models
 //! that do not generate text but answer a fixed set of questions with
 //! calibrated probabilities. The first backend is TypeSafe AI's **Jev** API;
 //! the same interface serves a mock, a recording, or your own fine-tuned
 //! model behind an OpenAI-compatible server.
 //!
 //! ```ignore
-//! use jev::prelude::*;
+//! use system_one::prelude::*;
 //!
-//! #[derive(JevChoice)]
+//! #[derive(AsChoice)]
 //! enum Department { Billing, Technical, Sales, Spam }
 //!
-//! #[derive(JevQuestions)]
+//! #[derive(AsQuestions)]
 //! struct Triage {
-//!     #[jev("Which department should handle this ticket?")]
+//!     #[ask("Which department should handle this ticket?")]
 //!     department: Choice<Department>,
-//!     #[jev("Is the customer asking for a refund?")]
+//!     #[ask("Is the customer asking for a refund?")]
 //!     wants_refund: Noul,
-//!     #[jev("How urgent is this?", levels = ["Can wait", "Today", "Right now"])]
+//!     #[ask("How urgent is this?", levels = ["Can wait", "Today", "Right now"])]
 //!     urgency: Score,
 //! }
 //!
@@ -33,7 +33,7 @@
 //!
 //! * **Types** — [`Noul`], [`Choice`], [`Score`] carry full distributions
 //!   plus decision helpers (cost-matrix decisions, entropy, sampling).
-//! * **Derive** — `#[derive(JevChoice)]` on an enum, `#[derive(JevQuestions)]`
+//! * **Derive** — `#[derive(AsChoice)]` on an enum, `#[derive(AsQuestions)]`
 //!   on a struct; the schema is generated, answers are parsed back.
 //! * **Backends** — [`backend::JevHttp`], [`backend::Mock`], [`backend::Replay`],
 //!   [`backend::LocalLogprob`], [`backend::Shadow`], or your own
@@ -61,10 +61,10 @@ pub use engine::Engine;
 pub use error::{Error, Result};
 pub use record::{Record, Recorder};
 pub use schema::{NoulCriteria, QuestionSchema, QuestionSpec};
-pub use traits::{JevChoice, JevQuestions};
+pub use traits::{AsChoice, AsQuestions};
 
 #[cfg(feature = "derive")]
-pub use jev_derive::{JevChoice, JevQuestions};
+pub use system_one_derive::{AsChoice, AsQuestions};
 
 /// Everything you need in scope for typical use.
 pub mod prelude {
@@ -77,9 +77,9 @@ pub mod prelude {
     pub use crate::error::{Error, Result};
     pub use crate::record::{Record, Recorder};
     pub use crate::schema::{QuestionSchema, QuestionSpec};
-    pub use crate::traits::{JevChoice as JevChoiceTrait, JevQuestions as JevQuestionsTrait};
+    pub use crate::traits::{AsChoice as AsChoiceTrait, AsQuestions as AsQuestionsTrait};
     #[cfg(feature = "derive")]
-    pub use jev_derive::{JevChoice, JevQuestions};
+    pub use system_one_derive::{AsChoice, AsQuestions};
 }
 
 // Used by the derive macros so generated code does not depend on the
@@ -89,5 +89,5 @@ pub mod __private {
     pub use crate::answer::{Choice, Noul, RawAnswers, Score};
     pub use crate::error::{Error, Result};
     pub use crate::schema::{NoulCriteria, QuestionSchema, QuestionSpec};
-    pub use crate::traits::{JevChoice, JevQuestions};
+    pub use crate::traits::{AsChoice, AsQuestions};
 }
