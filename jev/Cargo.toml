@@ -1,0 +1,64 @@
+[package]
+name = "jev"
+description = "Typed, calibrated decisions for Rust: a backend-agnostic client for TypeSafe AI's Jev (System One) API and for your own decision models"
+keywords = ["jev", "typesafe", "classifier", "calibration", "decision"]
+categories = ["api-bindings", "science"]
+readme = "../README.md"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+
+[features]
+default = ["http", "derive"]
+# Official Jev HTTP backend and the OpenAI-compatible logprob backend.
+http = ["dep:reqwest"]
+# Re-export the derive macros.
+derive = ["dep:jev-derive"]
+# Export JSONL recordings to Parquet.
+parquet = ["dep:arrow", "dep:parquet"]
+
+[dependencies]
+jev-derive = { version = "0.1.0", path = "../jev-derive", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+async-trait = "0.1"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "fs", "io-util"] }
+futures = "0.3"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"], optional = true }
+sha2 = "0.10"
+hex = "0.4"
+rand = "0.8"
+chrono = { version = "0.4", features = ["serde", "clock"] }
+arrow = { version = "55", optional = true }
+parquet = { version = "55", optional = true, default-features = false, features = ["arrow", "snap"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tempfile = "3"
+
+[[example]]
+name = "ask"
+required-features = ["http"]
+
+[[example]]
+name = "ticket_routing"
+required-features = ["derive"]
+
+[[example]]
+name = "trade_risk_gate"
+required-features = ["derive"]
+
+[[example]]
+name = "chat_reflex"
+required-features = ["derive"]
+
+[[example]]
+name = "batch_and_calibrate"
+required-features = ["derive"]
+
+[[example]]
+name = "shadow_local_model"
+required-features = ["derive", "http"]

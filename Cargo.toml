@@ -1,0 +1,14 @@
+[workspace]
+resolver = "2"
+members = ["jev", "jev-derive"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/heyaozh/jev-rust-crater"
+authors = ["heyaozh <heyaozh@outlook.com>"]
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
