@@ -103,7 +103,7 @@ binary shipped with the crate; it builds the schema at runtime, so there is no
 Rust to write:
 
 ```bash
-cargo install --path system-one        # once — puts `so-ask` on your PATH
+cargo install --path system-one        # once — puts `so-ask` and `so-rank` on your PATH
 export JEV_API_KEY=...          # without it you get a uniform Mock answer, and a note saying so
 
 so-ask "Is this customer asking for a refund?" \
@@ -119,6 +119,55 @@ so-ask --levels "Can wait a week,Within a day,Right now" \
 Without installing, from inside this repo: `cargo run --bin so-ask -- <args>`.
 
 It prints the full distribution, not just the arg-max — which is the whole point.
+
+### Rank a folder of notes
+
+`so-rank` asks one question of every markdown file under the paths you give it
+and prints them best first. Each document is judged against the question on its
+own, all of them in flight together. There is no keyword pre-filter, so a note
+that shares no words with the question can still come first. A hundred notes is
+roughly 70–80k input tokens per query, a fraction of a cent at the September 2026
+Jev list price; put a cheap retriever in front once the collection is much larger.
+
+```bash
+so-rank "How does queue position evolve after cancellations?" notes/
+
+so-rank --field title --field tags --lead --section "Key contribution" \
+        --max-chars 1500 --strip '(?s)<!--.*?-->' --show year \
+        --record runs/rank.jsonl \
+        "How does queue position evolve after cancellations?" notes/papers notes/concepts
+
+so-rank --dry-run …     # build every request, estimate tokens, send nothing
+```
+
+| Option | Chooses |
+|---|---|
+| `--field KEY` | front-matter keys sent to the model (repeatable; default: all) |
+| `--lead` | the text between the first `# ` heading and the next heading |
+| `--section TEXT` | sections whose heading contains `TEXT`, subsections included (repeatable) |
+| `--max-chars N` | body characters per document, counted as characters not bytes; `0` sends fields only |
+| `--strip REGEX` | deleted from the body before anything else (repeatable; `(?m)`, `(?s)` allowed) |
+| `--show KEY` | front-matter values printed next to each row |
+| `--no-role` | skip the second question and ask only about relevance |
+| `--top`, `--ext`, `--concurrency`, `--json`, `--record` | output and plumbing; `so-rank --help` lists them |
+
+Without `--lead` or `--section` the body is sent from the top. Each row shows
+`P(relevant)`, what the document would contribute (`method`, `evidence`,
+`background`, `counterpoint` or `unrelated`) with its confidence, the title and a
+short id. When a document yields no body text after `--lead`, `--section` and
+`--strip`, `so-rank` lists it instead of quietly ranking it on its title; that
+usually means its headings are named differently. Unreadable files and failed
+requests are listed too, never dropped.
+
+The short ids feed the calibration loop:
+
+```bash
+so-rank mark runs/rank.jsonl 3fa9c1d2 07bd22aa --no 91ee04b7   # which ones you actually used
+so-rank report runs/rank.jsonl                                  # is P(relevant) = 0.8 really 80 %?
+```
+
+Label a few low-ranked rows as well. Labels only on the rows you chose to read
+lean towards high probabilities and flatter the model.
 
 ## The three primitives
 
@@ -190,9 +239,13 @@ n=300  brier=0.1228  log_loss=0.4111  ece=0.0890  acc@0.5=0.857  base_rate=0.180
 
 Those rows, with outcomes attached, are also a labelled training set. `--features parquet` exports them for pandas / polars.
 
+Questions that only exist at runtime, from a CLI or a config file, go through
+`engine.ask_many_raw(&states, &schema)`: the same batching, cache and recorder,
+with raw answers back instead of a derived struct.
+
 ## Examples
 
-The `so-ask` binary above covers one-off questions. The examples are the full loops:
+The `so-ask` and `so-rank` binaries above cover one-off questions and ranking a folder. The examples are the full loops:
 
 | Example | Shows |
 |---|---|
@@ -235,6 +288,7 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 
 * `http` (default) — `JevHttp` and `LocalLogprob` (pulls in `reqwest` with rustls).
 * `derive` (default) — the derive macros.
+* `cli` (default) — the `so-rank` binary; pulls in `regex`. `so-ask` needs only `http`.
 * `parquet` — `system_one::record::export_parquet`.
 
 ## Limits worth knowing
@@ -242,6 +296,7 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 * The official API allows ≤255 `choice` options and 2–10 `score` levels; the derive macro enforces this at compile time.
 * `LocalLogprob` supports ≤26 options per `choice` (one letter per option) in this version.
 * Jev returns probabilities but no rationale; a `Shadow` with an LLM judge, sampled occasionally, is the usual audit pattern.
+* `so-rank` reads flat YAML front matter: scalars, inline lists and block lists. Anything nested deeper reaches the model as its raw text. Headings are recognised line by line, so a `#` comment inside a fenced code block counts as one.
 * Calibration is a property of a distribution: a backend calibrated on its training data can be confidently wrong on yours. Measure before you trust — that is what the recorder is for.
 
 ## Status
@@ -249,14 +304,17 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 `0.1.0`, not published to crates.io yet.
 
 **What is verified:** the type system, derive macros, schema wire format, cost-matrix
-decisions, cache, recorder, replay, shadow and the calibration maths — 11 integration
-tests, all offline against `Mock`, plus every feature combination compiling on its own.
+decisions, cache, recorder, replay, shadow and the calibration maths — 12 integration
+tests plus unit tests for `so-rank`'s document handling, all offline against `Mock`,
+plus every feature combination compiling on its own.
 
 **What is not:** the automated suite never calls the live API — it runs entirely on
 `Mock`, so it stays fast, free and deterministic. `JevHttp` has been exercised against
 the real endpoint by hand (September 2026) and the wire format held, but that is one
 person on one day, not a regression test. Point `so-ask` at your own key before you
 trust it with anything that matters; it is one command and it tells you immediately.
+`so-rank`'s ranking quality has not been measured on a real collection yet; `mark` and
+`report` exist so that it can be.
 
 Not affiliated with TypeSafe AI. *Jev* is their model; this is one unofficial client for it — and
 for anything else that answers the same shape of question. That is why the crate is not named

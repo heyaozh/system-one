@@ -11,13 +11,15 @@ repository.workspace = true
 authors.workspace = true
 
 [features]
-default = ["http", "derive"]
+default = ["http", "derive", "cli"]
 # Official Jev HTTP backend and the OpenAI-compatible logprob backend.
 http = ["dep:reqwest"]
 # Re-export the derive macros.
 derive = ["dep:system-one-derive"]
 # Export JSONL recordings to Parquet.
 parquet = ["dep:arrow", "dep:parquet"]
+# Command-line tools beyond `so-ask` (currently `so-rank`). Pulls in `regex`.
+cli = ["http", "dep:regex"]
 
 [dependencies]
 system-one-derive = { version = "0.1.0", path = "../system-one-derive", optional = true }
@@ -34,6 +36,7 @@ rand = "0.8"
 chrono = { version = "0.4", features = ["serde", "clock"] }
 arrow = { version = "55", optional = true }
 parquet = { version = "55", optional = true, default-features = false, features = ["arrow", "snap"] }
+regex = { version = "1", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
@@ -42,6 +45,11 @@ tempfile = "3"
 [[bin]]
 name = "so-ask"
 required-features = ["http"]
+
+[[bin]]
+name = "so-rank"
+path = "src/bin/so-rank/main.rs"
+required-features = ["cli"]
 
 [[example]]
 name = "ticket_routing"

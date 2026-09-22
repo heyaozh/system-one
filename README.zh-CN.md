@@ -102,7 +102,7 @@ async fn main() -> system_one::Result<()> {
 文件，schema 在运行时拼，不用写任何 Rust：
 
 ```bash
-cargo install --path system-one        # 一次就行——把 `so-ask` 放进 PATH
+cargo install --path system-one        # 一次就行——把 `so-ask` 和 `so-rank` 放进 PATH
 export JEV_API_KEY=...          # 没设就用 uniform Mock 回答，并会打印一行提示
 
 so-ask "这位客户是在要求退款吗？" \
@@ -118,6 +118,50 @@ so-ask --levels "可以等一周,一天之内,马上" \
 不想装的话，在仓库里直接跑：`cargo run --bin so-ask -- <参数>`。
 
 打印的是完整分布，不只是 argmax——这正是重点。
+
+### 给一个文件夹的笔记排序
+
+`so-rank` 对你给的路径下每一个 markdown 文件问同一个问题，按相关程度从高到低打印。
+每篇文档单独对着问题判断，所有请求同时发出。没有关键词预筛，所以一篇和问题一个词都
+不重合的笔记也可能排第一。一百篇笔记每次提问大约 70–80k input tokens，按 2026 年 9 月
+Jev 的标价不到一美分；文档量大很多以后，再在前面加一个便宜的检索做粗筛。
+
+```bash
+so-rank "How does queue position evolve after cancellations?" notes/
+
+so-rank --field title --field tags --lead --section "Key contribution" \
+        --max-chars 1500 --strip '(?s)<!--.*?-->' --show year \
+        --record runs/rank.jsonl \
+        "How does queue position evolve after cancellations?" notes/papers notes/concepts
+
+so-rank --dry-run …     # 构造全部请求、估算 token，一个都不发
+```
+
+| 选项 | 决定什么 |
+|---|---|
+| `--field KEY` | 发给模型的 front matter 键（可重复；默认全部） |
+| `--lead` | 第一个 `# ` 标题到下一个标题之间的文字 |
+| `--section TEXT` | 标题包含 `TEXT` 的章节，含其子章节（可重复） |
+| `--max-chars N` | 每篇正文字数，按字符不按字节算；`0` 表示只发字段 |
+| `--strip REGEX` | 先从正文里删掉的内容（可重复；支持 `(?m)`、`(?s)`） |
+| `--show KEY` | 在每行旁边打印的 front matter 值 |
+| `--no-role` | 不问第二个问题，只问相关性 |
+| `--top`、`--ext`、`--concurrency`、`--json`、`--record` | 输出和管道；`so-rank --help` 有完整列表 |
+
+不给 `--lead` 或 `--section` 时，正文从头开始发。每行显示 `P(relevant)`、这篇能贡献
+什么（`method`、`evidence`、`background`、`counterpoint` 或 `unrelated`）及其
+confidence、标题和一个短 id。如果某篇经过 `--lead`、`--section`、`--strip` 之后一个字
+正文都不剩，`so-rank` 会把它列出来，而不是悄悄只凭标题给它排名；这通常说明那些文件的
+标题起名不一样。读不了的文件和失败的请求也会列出来，不会被丢掉。
+
+短 id 用来接上校准闭环：
+
+```bash
+so-rank mark runs/rank.jsonl 3fa9c1d2 07bd22aa --no 91ee04b7   # 哪几篇你真的用上了
+so-rank report runs/rank.jsonl                                  # P(relevant) = 0.8 是不是真有 80 %？
+```
+
+排得靠后的也标几篇。只在你挑来读的那几行上打标，标签会偏向高概率，报告会替模型说好话。
 
 ## 三个原语
 
@@ -182,9 +226,12 @@ println!("{}", CalibrationReport::from_records(&records, "is_surprise", 10).rend
 
 带上结果的这些行，同时就是一份有标签的训练集。`--features parquet` 可导出给 pandas / polars。
 
+问题要到运行时才知道的场合，比如命令行或配置文件，用 `engine.ask_many_raw(&states, &schema)`：
+同样的批量、缓存和 recorder，返回原始答案而不是派生结构体。
+
 ## 示例
 
-一次性的问题用上面的 `so-ask`；下面这些示例是完整的闭环：
+一次性的问题用上面的 `so-ask`，给一个文件夹排序用 `so-rank`；下面这些示例是完整的闭环：
 
 | 示例 | 展示 |
 |---|---|
@@ -226,6 +273,7 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 
 * `http`（默认）——`JevHttp` 和 `LocalLogprob`（引入 rustls 版 `reqwest`）。
 * `derive`（默认）——派生宏。
+* `cli`（默认）——`so-rank` 可执行文件；引入 `regex`。`so-ask` 只需要 `http`。
 * `parquet`——`system_one::record::export_parquet`。
 
 ## 值得知道的限制
@@ -233,6 +281,7 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 * 官方 API：`choice` ≤255 个选项，`score` 2–10 个等级；派生宏在编译期强制。
 * 当前版本 `LocalLogprob` 每个 `choice` ≤26 个选项（一个字母一个选项）。
 * Jev 只给概率不给理由；常用的审计模式是挂一个 LLM 裁判做 `Shadow`，偶尔抽样。
+* `so-rank` 只读扁平的 YAML front matter：标量、行内列表和块列表。更深的嵌套以原始文本发给模型。标题按行识别，所以代码块里以 `#` 开头的注释也会被当成标题。
 * 校准是相对某个分布而言的：在自己训练数据上校准好的 backend，到了你的数据上可能自信地错。先量再信——recorder 就是干这个的。
 
 ## 状态
@@ -240,13 +289,14 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 `0.1.0`，还没发布到 crates.io。
 
 **已验证的部分**：类型系统、派生宏、schema 线格式、成本矩阵决策、缓存、recorder、
-replay、shadow 和校准数学——11 个集成测试，全部离线跑在 `Mock` 上；此外每种 feature
-组合都能单独编译通过。
+replay、shadow 和校准数学——12 个集成测试，加上 `so-rank` 文档处理的单元测试，全部
+离线跑在 `Mock` 上；此外每种 feature 组合都能单独编译通过。
 
 **未验证的部分**：自动化测试从不调用真实 API——它全部跑在 `Mock` 上，因而快、免费、
 可复现。`JevHttp` 已经手动打过真实 endpoint（2026 年 9 月），线格式当时是对的，但那是
 一个人在某一天的一次调用，不是回归测试。在把它用在要紧的地方之前，先拿你自己的 key
-跑一次 `so-ask`——一条命令，立刻就知道。
+跑一次 `so-ask`——一条命令，立刻就知道。`so-rank` 的排序质量还没有在真实的文档集上
+量过；`mark` 和 `report` 就是为了能量它而存在的。
 
 与 TypeSafe AI 无关联。*Jev* 是他们的模型；这里是它的一个非官方客户端——同时也是任何
 其它能回答同一形状问题的模型的客户端。crate 不用它命名，正是因为这一点。
