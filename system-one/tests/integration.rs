@@ -211,6 +211,41 @@ async fn ask_many_preserves_order() {
 }
 
 #[tokio::test]
+async fn ask_many_raw_runtime_schema_preserves_order_and_records() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("raw.jsonl");
+    let engine = Engine::new(Mock::with_rule(|state, name, _| {
+        let s = state["doc"].as_str().unwrap_or("");
+        (name == "hit").then(|| answers::noul(if s == "needle" { 0.95 } else { 0.05 }))
+    }))
+    .with_recorder(Recorder::open(&path).unwrap())
+    .with_concurrency(3);
+
+    // Built at runtime, no derive: the path a CLI or config file takes.
+    let schema = QuestionSchema::new().with(
+        "hit",
+        QuestionSpec::Noul {
+            instructions: "Is this the needle?".into(),
+            criteria: None,
+        },
+    );
+    let states: Vec<_> = ["hay", "needle", "hay", "straw"]
+        .iter()
+        .map(|d| serde_json::json!({ "doc": d }))
+        .collect();
+
+    let out = engine.ask_many_raw(&states, &schema).await;
+    assert_eq!(out.len(), 4);
+    let p = |i: usize| match out[i].as_ref().unwrap().get("hit").unwrap() {
+        RawAnswer::Noul { noul, .. } => *noul,
+        other => panic!("expected noul, got {other:?}"),
+    };
+    assert!(p(1) > 0.9, "needle stays at index 1");
+    assert!(p(0) < 0.1 && p(2) < 0.1 && p(3) < 0.1);
+    assert_eq!(read_records(&path).unwrap().len(), 4, "every state recorded");
+}
+
+#[tokio::test]
 async fn record_replay_and_outcomes_roundtrip() {
     let dir = tempfile::tempdir().unwrap();
     let path = dir.path().join("run.jsonl");
