@@ -32,6 +32,7 @@ jobs:
       - run: cargo check -p system-one --no-default-features
       - run: cargo check -p system-one --no-default-features --features derive
       - run: cargo check -p system-one --no-default-features --features http
+      - run: cargo check -p system-one --no-default-features --features cli
       - run: cargo check -p system-one --features parquet
 
   lint:

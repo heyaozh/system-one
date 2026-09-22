@@ -115,6 +115,26 @@ impl<B: DecisionBackend> Engine<B> {
             .await
     }
 
+    /// Untyped batch: one hand-built schema against many states,
+    /// `concurrency` at a time.
+    ///
+    /// Use this when the questions are only known at runtime (a CLI, a config
+    /// file, a UI). Results are returned in input order and each element is
+    /// its own `Result`, exactly like [`Engine::ask_many`]. Cache and recorder
+    /// apply as for [`Engine::ask_raw`].
+    pub async fn ask_many_raw<S, I>(&self, states: I, schema: &QuestionSchema) -> Vec<Result<RawAnswers>>
+    where
+        S: Serialize + Send + Sync,
+        I: IntoIterator<Item = S>,
+    {
+        let states: Vec<S> = states.into_iter().collect();
+        stream::iter(states.iter())
+            .map(|s| self.ask_raw(s, schema))
+            .buffered(self.concurrency)
+            .collect()
+            .await
+    }
+
     /// Same as [`Engine::ask_many`] but returns the state alongside its answer.
     pub async fn ask_many_with<Q, S, I>(&self, states: I) -> Vec<(S, Result<Q>)>
     where
