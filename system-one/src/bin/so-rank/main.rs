@@ -35,6 +35,20 @@ use system_one::prelude::*;
 use system_one::record::{attach_outcomes, read_records};
 use system_one::schema::NoulCriteria;
 
+/// `println!` that ends the process quietly when the reader has gone away
+/// (`so-rank … | head`) instead of panicking on a broken pipe.
+macro_rules! out {
+    ($($arg:tt)*) => {{
+        use std::io::Write as _;
+        if let Err(e) = writeln!(std::io::stdout(), $($arg)*) {
+            if e.kind() == std::io::ErrorKind::BrokenPipe {
+                std::process::exit(0);
+            }
+            panic!("writing to stdout: {e}");
+        }
+    }};
+}
+
 const USAGE: &str = "\
 usage:
   so-rank [options] <question> <path>...
@@ -75,7 +89,7 @@ fn main() {
         Some("mark") => mark(&args[1..]),
         Some("report") => report(&args[1..]),
         Some("-h" | "--help") | None => {
-            println!("{USAGE}");
+            out!("{USAGE}");
             return;
         }
         _ => rank(&args),
@@ -287,7 +301,7 @@ fn rank(args: &[String]) -> Res<()> {
     let shown = if o.top == 0 { rows.len() } else { o.top.min(rows.len()) };
     if o.json {
         for (i, r) in rows.iter().take(shown).enumerate() {
-            println!("{}", row_json(i + 1, r));
+            out!("{}", row_json(i + 1, r));
         }
     } else {
         print_table(&rows[..shown], &o.show);
@@ -389,11 +403,11 @@ fn print_table(rows: &[Row], show: &[String]) {
             .as_ref()
             .map(|(c, conf)| format!("{c} ({conf:.2})"))
             .unwrap_or_default();
-        println!("{:>3}. {:.3}  {:<20} {}  [{}]", i + 1, r.p, role, r.title, r.id);
-        println!("     {}", r.path.display());
+        out!("{:>3}. {:.3}  {:<20} {}  [{}]", i + 1, r.p, role, r.title, r.id);
+        out!("     {}", r.path.display());
         for (k, v) in show.iter().zip(r.show.iter().map(|(_, v)| v)) {
             if !v.is_empty() {
-                println!("     {k}: {v}");
+                out!("     {k}: {v}");
             }
         }
     }
@@ -429,7 +443,7 @@ fn dry_run(o: &Opts, docs: &[Doc], states: &[Value], schema: &QuestionSchema, un
         let n = est(&s.to_string()) + est(&questions);
         total += n;
         if o.json {
-            println!("{}", json!({ "path": d.path, "approx_tokens": n, "state": s }));
+            out!("{}", json!({ "path": d.path, "approx_tokens": n, "state": s }));
         }
     }
     eprintln!(
@@ -440,7 +454,7 @@ fn dry_run(o: &Opts, docs: &[Doc], states: &[Value], schema: &QuestionSchema, un
     );
     if let Some(first) = states.first() {
         if !o.json {
-            println!("first state:\n{}", serde_json::to_string_pretty(first)?);
+            out!("first state:\n{}", serde_json::to_string_pretty(first)?);
         }
     }
     for msg in unreadable {
@@ -489,7 +503,7 @@ fn mark(args: &[String]) -> Res<()> {
     let (y, no) = labels
         .iter()
         .fold((0, 0), |(y, n), (_, v)| if *v { (y + 1, n) } else { (y, n + 1) });
-    println!("marked {y} relevant, {no} not relevant ({n} records updated)");
+    out!("marked {y} relevant, {no} not relevant ({n} records updated)");
     Ok(())
 }
 
@@ -518,12 +532,12 @@ fn report(args: &[String]) -> Res<()> {
         .iter()
         .filter(|r| r.outcome.as_ref().and_then(|o| o.get(RELEVANT)).is_some())
         .count();
-    println!("{} records, {} labelled", records.len(), labelled);
-    println!("{}", CalibrationReport::from_records(&records, RELEVANT, 10).render());
+    out!("{} records, {} labelled", records.len(), labelled);
+    out!("{}", CalibrationReport::from_records(&records, RELEVANT, 10).render());
     if labelled > 0 && labelled < 50 {
-        println!("note: under 50 labels the bins are mostly noise.");
+        out!("note: under 50 labels the bins are mostly noise.");
     }
-    println!(
+    out!(
         "note: labels only on rows you chose to read lean towards high probabilities;\n      \
          mark a few low-ranked rows as well or the report flatters the model."
     );

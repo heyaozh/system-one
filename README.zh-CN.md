@@ -289,7 +289,7 @@ Linux 用系统的密钥存储（`pass`、`keyctl`、systemd credentials）；CI
 `0.1.0`，还没发布到 crates.io。
 
 **已验证的部分**：类型系统、派生宏、schema 线格式、成本矩阵决策、缓存、recorder、
-replay、shadow 和校准数学——12 个集成测试，加上 `so-rank` 文档处理的单元测试，全部
+replay、shadow 和校准数学——12 个集成测试，加上 `so-rank` 的单元测试和黑盒测试，全部
 离线跑在 `Mock` 上；此外每种 feature 组合都能单独编译通过。
 
 **未验证的部分**：自动化测试从不调用真实 API——它全部跑在 `Mock` 上，因而快、免费、

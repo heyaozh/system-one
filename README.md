@@ -305,7 +305,7 @@ Exporting the key from a login profile (`~/.zshrc`, `~/.bash_profile`) works but
 
 **What is verified:** the type system, derive macros, schema wire format, cost-matrix
 decisions, cache, recorder, replay, shadow and the calibration maths — 12 integration
-tests plus unit tests for `so-rank`'s document handling, all offline against `Mock`,
+tests plus unit and black-box tests for `so-rank`, all offline against `Mock`,
 plus every feature combination compiling on its own.
 
 **What is not:** the automated suite never calls the live API — it runs entirely on
